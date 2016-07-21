@@ -1,0 +1,58 @@
+package com.reactiva.emulator.netty.gw;
+
+/**
+ * @deprecated Event loop needs to be the same thread
+ * @author esutdal
+ *
+ */
+class ReconnectionTask //implements Runnable
+{/*
+	*//**
+	 * 
+	 *//*
+	private final HostAndPort hostAndPort;
+	*//**
+	 * @param hostAndPort
+	 *//*
+	ReconnectionTask(HostAndPort hostAndPort) {
+		this.hostAndPort = hostAndPort;
+	}
+	private void tryReconnect()
+    {
+		this.hostAndPort.close0();
+		this.hostAndPort.associate(this.hostAndPort.boot.connect(this.hostAndPort.host, this.hostAndPort.port), this.hostAndPort.boot);
+    	
+    }
+    private boolean isReachable() 
+    {
+    	Assert.notNull(this.hostAndPort.outboundChannel, "outboundChannel is null");
+    	try {
+			return HealthChecker.isChannelReachable(this.hostAndPort.outboundChannel);
+		} catch (Exception e) {
+			HostAndPort.log.warn(this.hostAndPort.toString() + " <reachability test> - " + e.getMessage());
+			HostAndPort.log.debug("", e);
+		}
+		return false;
+    }
+	@Override
+	public void run() {
+		if (this.hostAndPort.rcMutex.tryLock()) 
+		{
+			try 
+			{
+				HostAndPort.log.info("Running reconnection checker for " + this.hostAndPort.toString());
+				if (!isReachable()) {
+					tryReconnect();
+					this.hostAndPort.awaitReady(1, TimeUnit.SECONDS);
+				}
+			} catch (Exception e) {
+				HostAndPort.log.warn("Not able to connect to outbound host "+this.hostAndPort.toString() + " - " + e.getMessage());
+				HostAndPort.log.debug("", e);
+			} finally {
+				this.hostAndPort.rcMutex.unlock();
+				
+			} 
+		}
+		
+	}
+*/}

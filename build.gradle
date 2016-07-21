@@ -35,13 +35,12 @@ repositories {
 
 dependencies {
   
-  compile ('org.springframework.boot:spring-boot-starter')
-  compile('com.hazelcast:hazelcast:3.6.2')
-  compile ('com.esotericsoftware:kryo:3.0.3')
-  
+  compile ('org.springframework.boot:spring-boot-starter'){
+  	//exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+  }
+  //compile('org.springframework.boot:spring-boot-starter-log4j')
+  compile('io.netty:netty-all:4.1.2.Final')
+  compile group: 'javax.servlet', name: 'servlet-api', version: '2.4'
   testCompile("org.springframework.boot:spring-boot-starter-test")
-  
-  //compile('org.mapdb:mapdb:3.0.0-RC2')
-  //compile('com.google.code.gson:gson:2.5')
   
 }
