@@ -1,8 +1,11 @@
 *.class
+<<<<<<< HEAD
 bin/
 .gradle/
 .settings/
 build/
+=======
+>>>>>>> c4316feca0d70e4e8c58b5bee371d332ac164069
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
