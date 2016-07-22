@@ -141,6 +141,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 					
 					if (maxConnections > 1) {
 						b.remoteAddress(future.channel().remoteAddress());
+						b = b.clone(EventLoops.get());
 						pooledChannels = new FixedChannelPool(b, OutboundEndpoint.this, maxConnections - 1);
 					}
 				}
@@ -182,7 +183,6 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 					if(future.isSuccess())
 					{
 						Channel c = future.getNow();
-						log.info("#################################### created pooled ##########################");
 						boolean offered = false;
 						try 
 						{
@@ -197,9 +197,9 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 								pooledChannels.release(c);
 						}
 					}
-					else if(future.isDone())
+					else
 					{
-						log.warn("cancelled?"+future.isCancelled()+" done?"+future.isDone(), future.cause());
+						log.warn("Failed to create pooled connection. Future cancelled?"+future.isCancelled()+" done?"+future.isDone(), future.cause());
 						
 					}
 
@@ -262,12 +262,17 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     			&& channelState.compareAndSet(READY, READY);
     }
     /**
-     * Will return a pooled conenction, or the unpooled.
+     * Will return a pooled connection, or the unpooled.
      * @return
      */
     private PooledOrUnpooled getOutChannel()
     {
     	Channel ch = acquirePooledChannel();
+    	//TODO: pooling is disabled. and thus so is 
+    	//server side multithreading! this is because
+    	//Netty pins a channel to a particular thread
+    	//to avoid locking
+    	ch = null;
     	return ch == null ? new PooledOrUnpooled(outboundChannel, false) : new PooledOrUnpooled(ch, true);
     }
     /**
@@ -279,7 +284,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     {
     	log.debug("FORWARD TUNNEL WRITE => client 2 server");
     	final PooledOrUnpooled pooled = getOutChannel();
-    	log.info("Found target instance => "+pooled);
+    	log.debug("Found target instance => "+pooled);
     	pooled.channel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
 			
 			@Override

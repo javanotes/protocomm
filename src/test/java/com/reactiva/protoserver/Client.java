@@ -49,7 +49,7 @@ public class Client {
 			s.close();
 		}
 	}
-	static int iter = 10, port = 8093;
+	static int iter = 100, port = 8093;
 	public static void main(String[] args) throws UnknownHostException, IOException {
 		ExecutorService ex = Executors.newFixedThreadPool(2);
 		for (int i = 0; i < iter; i++) {

@@ -27,7 +27,7 @@ public class Config {
 		return port;
 	}
 	int getMaxThread() {
-		return maxThread;
+		return ioThread;
 	}
 	int getProtoLenMax() {
 		return protoLenMax;
@@ -42,8 +42,11 @@ public class Config {
 	boolean proxyMode;
 	@Value("${server.port}")
 	int port;
-	@Value("${server.io-threads: 2}")
-	int maxThread;
+	@Value("${server.io-threads: 1}")
+	int ioThread;
+	
+	@Value("${server.exec-threads: 4}")
+	int execThread;
 	
 	@Value("${server.proto.len.max: 1000}")
 	int protoLenMax;
@@ -92,6 +95,7 @@ public class Config {
 	{
 		server().startServer();
 		monitorThread = new Thread(server(), "TCPMon");
+		monitorThread.setDaemon(true);
 		monitorThread.start();
 	}
 	@PreDestroy
@@ -105,7 +109,7 @@ public class Config {
 	@DependsOn({"decoder", "processor", "encoder", "targets"})
 	public TCPConnector server()
 	{
-		TCPConnector s = new TCPConnector(port, maxThread, proxyMode);
+		TCPConnector s = new TCPConnector(port, ioThread, execThread, proxyMode);
 		s.setConfig(this);
 		//in server mode, initialize request handlers.
 		if (!proxyMode) {

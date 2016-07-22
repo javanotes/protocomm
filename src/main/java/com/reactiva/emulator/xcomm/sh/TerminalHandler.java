@@ -20,7 +20,7 @@ public class TerminalHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception { 
 		try 
         {
-			log.info("End processing");
+			log.debug("End processing");
 			ChannelFuture cf = ctx.writeAndFlush(msg);
         	if(closeOnFlush)
         	{

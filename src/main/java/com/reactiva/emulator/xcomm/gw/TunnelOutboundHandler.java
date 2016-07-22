@@ -36,6 +36,7 @@ class TunnelOutboundHandler extends ChannelInboundHandlerAdapter {
 	        @Override
 	        public void operationComplete(ChannelFuture future) {
 	        	ctx.channel().read();
+	        	log.debug("REVERSE TUNNEL WRITE complete");
 	        }
 		});
     }

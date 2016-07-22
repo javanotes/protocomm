@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 /**
  * The handler class to use the server as a proxy gateway.
@@ -39,7 +38,6 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 	
 	private final List<OutboundEndpoint> targets;
 	private final int size;
-	private NioEventLoopGroup selectorLoop = new NioEventLoopGroup();
 	/**
 	 * 
 	 * @param targets
@@ -167,7 +165,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		// Start the connection attempt.
 		Bootstrap b = new Bootstrap();
 		b
-		.group(selectorLoop)
+		.group(EventLoops.get())
 		.channel(NioSocketChannel.class)
 		.handler(tunnelOutHdlr)
 		.option(ChannelOption.AUTO_READ, true)

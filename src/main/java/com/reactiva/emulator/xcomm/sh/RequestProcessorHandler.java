@@ -2,6 +2,9 @@ package com.reactiva.emulator.xcomm.sh;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.reactiva.emulator.xcomm.dto.Request;
 import com.reactiva.emulator.xcomm.dto.Response;
 
@@ -11,6 +14,7 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 @Sharable
 public class RequestProcessorHandler extends MessageToMessageDecoder<Request> {
 
+	private static final Logger log = LoggerFactory.getLogger(RequestProcessorHandler.class);
 	/**
 	 * Pass all helper class instances, if reqd. Singleton scoped.
 	 */
@@ -25,6 +29,7 @@ public class RequestProcessorHandler extends MessageToMessageDecoder<Request> {
 	 */
 	protected Response doProcess(Request request) throws Exception
 	{
+		log.info("Processing request..");
 		//TODO override
 		Response r = new Response();
 		r.setPayload("Got request => "+request.getPayload());

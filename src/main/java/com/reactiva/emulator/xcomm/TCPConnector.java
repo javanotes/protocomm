@@ -27,9 +27,11 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
 
 class TCPConnector implements Runnable{
 	private BasicChannelHandler bch;
+	private DefaultEventExecutorGroup execThreads;
 	/**
 	 * 
 	 * @param ch
@@ -37,6 +39,7 @@ class TCPConnector implements Runnable{
 	 */
 	protected void serverHandlers(SocketChannel ch) throws Exception
 	{
+		
 		Assert.notNull(config);
 		/**
 		 * The maxFrameLength can be set as per the protocol design (if defined). That
@@ -45,7 +48,7 @@ class TCPConnector implements Runnable{
 		 * TODO: make LengthFieldBasedFrameDecoder configurable?
 		 */
 		ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes, Math.negateExact(config.protoLenBytes), 0));
-		ch.pipeline().addLast(decoder.getObject(), processor, encoder);
+		ch.pipeline().addLast(execThreads, decoder.getObject(), processor, encoder);
 		ch.pipeline().addLast(terminal);
 		
 		//ch.pipeline().addLast(bch);
@@ -57,7 +60,7 @@ class TCPConnector implements Runnable{
 	 */
 	protected void proxyHandlers(SocketChannel ch) throws Exception
 	{
-		ch.pipeline().addLast(balancer);
+		ch.pipeline().addLast(execThreads, balancer);
 	}
 	
 	/**
@@ -81,7 +84,7 @@ class TCPConnector implements Runnable{
 		}
 	}
 	private static Logger log = LoggerFactory.getLogger(TCPConnector.class);
-	private int port, wThreads;
+	private int port, ioThreads, eventThreads;
 	
 	protected RequestConvertorHandlerFactory decoder;
 	protected RequestProcessorHandler processor;
@@ -94,11 +97,12 @@ class TCPConnector implements Runnable{
 	/**
 	 * A TCP connector which can act as a server or proxy.
 	 * @param port
-	 * @param workerThreadCount
+	 * @param ioThreadCount
 	 */
-	public TCPConnector(int port, int workerThreadCount, boolean proxy) {
+	public TCPConnector(int port, int ioThreadCount, int execThreadCount, boolean proxy) {
 		this.port = port;
-		wThreads = workerThreadCount;
+		ioThreads = ioThreadCount;
+		eventThreads = execThreadCount;
 		this.proxy = proxy;
 		
 	}
@@ -157,7 +161,16 @@ class TCPConnector implements Runnable{
 	 * @param workerThreadCount
 	 */
 	public TCPConnector(int port, int workerThreadCount) {
-		this(port, workerThreadCount, false);
+		this(port, workerThreadCount, Runtime.getRuntime().availableProcessors(), false);
+	}
+	/**
+	 * 
+	 * @param port
+	 * @param workerThreadCount
+	 * @param proxyMode
+	 */
+	public TCPConnector(int port, int workerThreadCount, boolean proxyMode) {
+		this(port, 1, workerThreadCount, proxyMode);
 	}
 	private ServerBootstrap server;
 	private NioEventLoopGroup boss, worker;
@@ -177,14 +190,24 @@ class TCPConnector implements Runnable{
 				return t;
 			}
 		});
-		worker = new NioEventLoopGroup(wThreads, new ThreadFactory() {
+		worker = new NioEventLoopGroup(ioThreads, new ThreadFactory() {
 			int n=0;
 			@Override
 			public Thread newThread(Runnable r) {
-				Thread t = new Thread(r, "TCPConn-"+(n++));
+				Thread t = new Thread(r, "TCPIO-"+(n++));
 				return t;
 			}
 		});
+		
+		execThreads = new DefaultEventExecutorGroup(eventThreads, new ThreadFactory() {
+			int n=1;
+			@Override
+			public Thread newThread(Runnable r) {
+				Thread t = new Thread(r, "TCPExec-"+(n++));
+				return t;
+			}
+		});
+		
 		server = new ServerBootstrap()
 				.group(boss, worker)
 				.channel(NioServerSocketChannel.class)
@@ -196,6 +219,7 @@ class TCPConnector implements Runnable{
 	
 	@Override
 	public void run() {
+		//TODO: can be implemented for some monitoring stuff.
 		while(running)
 		{
 			doTask();
@@ -229,6 +253,8 @@ class TCPConnector implements Runnable{
 		}
 		worker.shutdownGracefully();
 		boss.shutdownGracefully();
+		if(execThreads != null)
+			execThreads.shutdownGracefully();
 		log.info("Stopped transport on port "+port);
 	}
 
