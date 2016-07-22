@@ -1,11 +1,11 @@
-package com.reactiva.emulator.netty.gw.bal;
+package com.reactiva.emulator.xcomm.gw.bal;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.reactiva.emulator.netty.gw.bal.Target.Algorithm;
+import com.reactiva.emulator.xcomm.gw.bal.Target.Algorithm;
 
 class WeightedBalancingStrategy<T extends Target> extends RoundRobinBalancingStrategy<T> {
 

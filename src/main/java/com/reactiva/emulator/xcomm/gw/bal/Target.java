@@ -1,4 +1,4 @@
-package com.reactiva.emulator.netty.gw.bal;
+package com.reactiva.emulator.xcomm.gw.bal;
 
 import java.io.Closeable;
 

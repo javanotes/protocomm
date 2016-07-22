@@ -1,4 +1,4 @@
-package com.reactiva.emulator.netty;
+package com.reactiva.emulator.xcomm;
 
 import java.util.Map;
 
@@ -11,11 +11,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
-import com.reactiva.emulator.netty.sh.BasicChannelHandler;
-import com.reactiva.emulator.netty.sh.RequestConvertorHandlerFactory;
-import com.reactiva.emulator.netty.sh.RequestProcessorHandler;
-import com.reactiva.emulator.netty.sh.ResponseConvertorHandler;
-import com.reactiva.emulator.netty.sh.TerminalHandler;
+import com.reactiva.emulator.xcomm.sh.BasicChannelHandler;
+import com.reactiva.emulator.xcomm.sh.RequestConvertorHandlerFactory;
+import com.reactiva.emulator.xcomm.sh.RequestProcessorHandler;
+import com.reactiva.emulator.xcomm.sh.ResponseConvertorHandler;
+import com.reactiva.emulator.xcomm.sh.TerminalHandler;
 
 @Configuration
 public class Config {

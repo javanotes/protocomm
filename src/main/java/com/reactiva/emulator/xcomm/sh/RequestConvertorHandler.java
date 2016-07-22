@@ -1,4 +1,4 @@
-package com.reactiva.emulator.netty.sh;
+package com.reactiva.emulator.xcomm.sh;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import com.reactiva.emulator.netty.dto.Request;
+import com.reactiva.emulator.xcomm.dto.Request;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

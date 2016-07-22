@@ -1,6 +1,8 @@
-package com.reactiva.emulator.netty.dto;
+package com.reactiva.emulator.xcomm.dto;
 
-public class Response {
+public class Request {
+
+	String payload;
 
 	public String getPayload() {
 		return payload;
@@ -9,6 +11,4 @@ public class Response {
 	public void setPayload(String payload) {
 		this.payload = payload;
 	}
-
-	String payload;
 }

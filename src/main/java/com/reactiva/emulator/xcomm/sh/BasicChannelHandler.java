@@ -1,4 +1,4 @@
-package com.reactiva.emulator.netty.sh;
+package com.reactiva.emulator.xcomm.sh;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

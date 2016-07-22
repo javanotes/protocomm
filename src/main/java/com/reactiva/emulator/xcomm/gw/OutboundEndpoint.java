@@ -1,4 +1,4 @@
-package com.reactiva.emulator.netty.gw;
+package com.reactiva.emulator.xcomm.gw;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.reactiva.emulator.netty.gw.bal.Target;
+import com.reactiva.emulator.xcomm.gw.bal.Target;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;

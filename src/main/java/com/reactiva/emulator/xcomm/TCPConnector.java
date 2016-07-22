@@ -1,4 +1,4 @@
-package com.reactiva.emulator.netty;
+package com.reactiva.emulator.xcomm;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,14 +10,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
-import com.reactiva.emulator.netty.Config.HostAndPort;
-import com.reactiva.emulator.netty.gw.TunnelInboundHandler;
-import com.reactiva.emulator.netty.gw.OutboundEndpoint;
-import com.reactiva.emulator.netty.sh.BasicChannelHandler;
-import com.reactiva.emulator.netty.sh.RequestConvertorHandlerFactory;
-import com.reactiva.emulator.netty.sh.RequestProcessorHandler;
-import com.reactiva.emulator.netty.sh.ResponseConvertorHandler;
-import com.reactiva.emulator.netty.sh.TerminalHandler;
+import com.reactiva.emulator.xcomm.Config.HostAndPort;
+import com.reactiva.emulator.xcomm.gw.OutboundEndpoint;
+import com.reactiva.emulator.xcomm.gw.TunnelInboundHandler;
+import com.reactiva.emulator.xcomm.sh.BasicChannelHandler;
+import com.reactiva.emulator.xcomm.sh.RequestConvertorHandlerFactory;
+import com.reactiva.emulator.xcomm.sh.RequestProcessorHandler;
+import com.reactiva.emulator.xcomm.sh.ResponseConvertorHandler;
+import com.reactiva.emulator.xcomm.sh.TerminalHandler;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;

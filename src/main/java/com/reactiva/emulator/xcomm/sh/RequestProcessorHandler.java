@@ -1,9 +1,9 @@
-package com.reactiva.emulator.netty.sh;
+package com.reactiva.emulator.xcomm.sh;
 
 import java.util.List;
 
-import com.reactiva.emulator.netty.dto.Request;
-import com.reactiva.emulator.netty.dto.Response;
+import com.reactiva.emulator.xcomm.dto.Request;
+import com.reactiva.emulator.xcomm.dto.Response;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;

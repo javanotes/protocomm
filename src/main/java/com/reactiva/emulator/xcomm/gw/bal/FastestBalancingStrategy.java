@@ -1,9 +1,9 @@
-package com.reactiva.emulator.netty.gw.bal;
+package com.reactiva.emulator.xcomm.gw.bal;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.reactiva.emulator.netty.gw.bal.Target.Algorithm;
+import com.reactiva.emulator.xcomm.gw.bal.Target.Algorithm;
 
 class FastestBalancingStrategy<T extends Target> implements BalancingStrategy<T> {
 

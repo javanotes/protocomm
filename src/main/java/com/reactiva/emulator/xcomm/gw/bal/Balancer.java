@@ -1,8 +1,8 @@
-package com.reactiva.emulator.netty.gw.bal;
+package com.reactiva.emulator.xcomm.gw.bal;
 
 import java.util.List;
 
-import com.reactiva.emulator.netty.gw.bal.Target.Algorithm;
+import com.reactiva.emulator.xcomm.gw.bal.Target.Algorithm;
 
 public class Balancer {
 

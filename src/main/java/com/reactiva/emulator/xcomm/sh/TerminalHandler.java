@@ -1,9 +1,9 @@
-package com.reactiva.emulator.netty.sh;
+package com.reactiva.emulator.xcomm.sh;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.reactiva.emulator.netty.Utils;
+import com.reactiva.emulator.xcomm.Utils;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;

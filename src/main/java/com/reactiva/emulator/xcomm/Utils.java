@@ -1,4 +1,4 @@
-package com.reactiva.emulator.netty;
+package com.reactiva.emulator.xcomm;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;

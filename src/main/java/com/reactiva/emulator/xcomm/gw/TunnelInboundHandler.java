@@ -1,4 +1,4 @@
-package com.reactiva.emulator.netty.gw;
+package com.reactiva.emulator.xcomm.gw;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,10 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import com.reactiva.emulator.netty.Utils;
-import com.reactiva.emulator.netty.gw.bal.Balancer;
-import com.reactiva.emulator.netty.gw.bal.BalancingStrategy;
-import com.reactiva.emulator.netty.gw.bal.Target.Algorithm;
+import com.reactiva.emulator.xcomm.Utils;
+import com.reactiva.emulator.xcomm.gw.bal.Balancer;
+import com.reactiva.emulator.xcomm.gw.bal.BalancingStrategy;
+import com.reactiva.emulator.xcomm.gw.bal.Target.Algorithm;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
