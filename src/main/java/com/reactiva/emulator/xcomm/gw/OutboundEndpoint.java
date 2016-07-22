@@ -2,6 +2,7 @@ package com.reactiva.emulator.xcomm.gw;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -10,17 +11,21 @@ import org.slf4j.LoggerFactory;
 
 import com.reactiva.emulator.xcomm.gw.bal.Target;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.pool.ChannelPoolHandler;
+import io.netty.channel.pool.FixedChannelPool;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 /**
  * 
  * @author esutdal
  *
  */
-public class OutboundEndpoint implements Closeable, Target, ChannelPoolHandler, Endpoint{
+public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoolHandler{
 
 	/*
 	 * 	The possible state transitions for TCP based child and client channels are:
@@ -92,11 +97,21 @@ public class OutboundEndpoint implements Closeable, Target, ChannelPoolHandler, 
      * @param port
      */
     public OutboundEndpoint(String host, int port) {
+        this(host, port, 1);
+    }
+    /**
+     * 
+     * @param host
+     * @param port
+     * @param maxConn
+     */
+    public OutboundEndpoint(String host, int port, int maxConn) {
         if ((port < 0) || (port > 65536)) {
             throw new IllegalArgumentException("Port must be in range 0-65536");
         }
         this.host = host;
         this.port = port;
+        this.maxConnections = maxConn;
     }
     
     private static final int READY = 1;
@@ -123,6 +138,11 @@ public class OutboundEndpoint implements Closeable, Target, ChannelPoolHandler, 
 					channelState.notifyAll();
 					log.info("Successfully created tunnel to {} on LoadBalancer with id '{}'.",
 							outboundChannel.remoteAddress(), OutboundEndpoint.this.hashCode());
+					
+					if (maxConnections > 1) {
+						b.remoteAddress(future.channel().remoteAddress());
+						pooledChannels = new FixedChannelPool(b, OutboundEndpoint.this, maxConnections - 1);
+					}
 				}
 			} else {
 				synchronized (channelState) {
@@ -138,16 +158,74 @@ public class OutboundEndpoint implements Closeable, Target, ChannelPoolHandler, 
     private Channel outboundChannel;
     
     private final AtomicInteger channelState = new AtomicInteger(OPEN);
-    /**
+	private int maxConnections = 3;
+    public int getMaxConnections() {
+		return maxConnections;
+	}
+
+	public void setMaxConnections(int maxConnections) {
+		this.maxConnections = maxConnections;
+	}
+	private final SynchronousQueue<Channel> pooledChannelSyncQ = new SynchronousQueue<>();
+	/**
+	 * Try acquire a pooled channel.
+	 * @return
+	 */
+	private Channel acquirePooledChannel()
+	{
+		if(pooledChannels != null)
+		{
+			pooledChannels.acquire().addListener(new FutureListener<Channel>() {
+
+				@Override
+				public void operationComplete(Future<Channel> future) throws Exception  {
+					if(future.isSuccess())
+					{
+						Channel c = future.getNow();
+						log.info("#################################### created pooled ##########################");
+						boolean offered = false;
+						try 
+						{
+							offered = pooledChannelSyncQ.offer(c, 1, TimeUnit.SECONDS);
+						} 
+						catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+						}
+						finally
+						{
+							if(!offered)
+								pooledChannels.release(c);
+						}
+					}
+					else if(future.isDone())
+					{
+						log.warn("cancelled?"+future.isCancelled()+" done?"+future.isDone(), future.cause());
+						
+					}
+
+				}
+			});
+			try {
+				return pooledChannelSyncQ.poll(10, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
+		return null;
+	}
+	private Bootstrap b;
+	/**
      * Associate a channel to this instance.
      * @param f
+     * @param b 
      * @param inboundChannel 
      */
-    synchronized void associate(ChannelFuture f)
+    synchronized void associate(ChannelFuture f, Bootstrap b)
     {
     	close0();
+    	this.b = b;
     	f.addListener(new ChannelReadyListener());
-    	this.outboundChannel = f.channel();
+    	outboundChannel = f.channel();
     	    	
     }
     /**
@@ -170,7 +248,7 @@ public class OutboundEndpoint implements Closeable, Target, ChannelPoolHandler, 
     	
     	return isReady();
     }
-    
+    private FixedChannelPool pooledChannels;
     /**
      * If channel is ready.
      * @param timeout
@@ -184,29 +262,35 @@ public class OutboundEndpoint implements Closeable, Target, ChannelPoolHandler, 
     			&& channelState.compareAndSet(READY, READY);
     }
     /**
-     * Override this method to use a connection pool.
+     * Will return a pooled conenction, or the unpooled.
      * @return
      */
-    private Channel getOutChannel()
+    private PooledOrUnpooled getOutChannel()
     {
-    	return outboundChannel;
+    	Channel ch = acquirePooledChannel();
+    	return ch == null ? new PooledOrUnpooled(outboundChannel, false) : new PooledOrUnpooled(ch, true);
     }
     /**
      * Write to this endpoint.
-     * @param ctx
+     * @param clientCtx
      * @param msg
      */
-    void write(final ChannelHandlerContext ctx, Object msg)
+    void write(final ChannelHandlerContext clientCtx, Object msg)
     {
     	log.debug("FORWARD TUNNEL WRITE => client 2 server");
-    	
-		getOutChannel().writeAndFlush(msg).addListener(new ChannelFutureListener() {
+    	final PooledOrUnpooled pooled = getOutChannel();
+    	log.info("Found target instance => "+pooled);
+    	pooled.channel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
 			
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception {
 				log.debug("Making reverse tunnel ready");
+				if(pooled.pooled)
+				{
+					pooledChannels.release(pooled.channel);
+				}
 				//don't request read here
-				getTunnelOutHandler().setClientChannel(ctx.channel());
+				getTunnelOutHandler().setClientChannel(clientCtx.channel());
 			}
 		});
     }
@@ -245,6 +329,10 @@ public class OutboundEndpoint implements Closeable, Target, ChannelPoolHandler, 
 				channelState.compareAndSet(CLOSING, CLOSED);
 				channelState.notifyAll();
 			}
+		}
+		if(pooledChannels != null)
+		{
+			pooledChannels.close();
 		}
 	}
 	@Override
@@ -329,19 +417,20 @@ public class OutboundEndpoint implements Closeable, Target, ChannelPoolHandler, 
 
 	@Override
 	public void channelReleased(Channel ch) throws Exception {
-		// TODO Auto-generated method stub
+		log.info("channelReleased: "+ch.remoteAddress());
 		
 	}
 
 	@Override
 	public void channelAcquired(Channel ch) throws Exception {
-		// TODO Auto-generated method stub
+		log.info("channelAcquired: "+ch.remoteAddress());
 		
 	}
 
 	@Override
 	public void channelCreated(Channel ch) throws Exception {
-		// TODO Auto-generated method stub
+		log.info("channelCreated: "+ch.remoteAddress());
 		
 	}
+
 }

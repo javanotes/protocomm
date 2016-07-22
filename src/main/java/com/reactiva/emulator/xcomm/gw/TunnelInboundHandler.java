@@ -69,7 +69,11 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		{
 			activeSessions.putIfAbsent(client.remoteAddress().toString(), new OEMetrics(host));
 		}
-		return activeSessions.get(client.remoteAddress().toString()).incrementAndGet();
+		int n = activeSessions.get(client.remoteAddress().toString()).incrementAndGet();
+		if (log.isDebugEnabled()) {
+			log.debug(activeSessions.get(client.remoteAddress().toString()).toString());
+		}
+		return n;
 	}
 	/**
 	 * 
@@ -80,7 +84,11 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 	{
 		if(activeSessions.containsKey(client.remoteAddress().toString()))
 		{
-			return activeSessions.get(client.remoteAddress().toString()).decrementAndGet();
+			int n = activeSessions.get(client.remoteAddress().toString()).decrementAndGet();
+			if (log.isDebugEnabled()) {
+				log.debug(activeSessions.get(client.remoteAddress().toString()).toString());
+			}
+			return n;
 		}
 		return 0;
 	}
@@ -129,7 +137,6 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 					break;
 				}
 			} finally {
-				//targets.addLast(target);
 			} 
 		}
 		if(!written)
@@ -155,7 +162,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
      */
     protected void initTunnel(OutboundEndpoint h, long await, TimeUnit unit) throws InterruptedException
     {
-    	log.info("<< Negotiating target destination "+h+" >>");
+    	log.info("<< Negotiating target destination "+h+" with pool of size "+h.getMaxConnections()+" >>");
     	TunnelOutboundHandler tunnelOutHdlr = new TunnelOutboundHandler();
 		// Start the connection attempt.
 		Bootstrap b = new Bootstrap();
@@ -169,10 +176,9 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		//.option(ChannelOption.SO_LINGER, 2)
 		;
 		
-		//FixedChannelPool pool = new 
 		ChannelFuture f = b.connect(h.getHost(), h.getPort());
 		
-		h.associate(f);
+		h.associate(f, b);
 
 		if (await > 0) {
 			if (!h.awaitReady(await, unit)) {

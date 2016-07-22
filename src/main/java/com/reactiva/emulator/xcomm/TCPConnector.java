@@ -110,16 +110,22 @@ class TCPConnector implements Runnable{
 		Assert.notNull(targets, "Gateway destinations not found");
 		Assert.notNull(targets.getTarget(), "Gateway destinations not found");
 		List<OutboundEndpoint> out = new ArrayList<>();
+		
 		for(Entry<String, String> e : targets.getTarget().entrySet())
 		{
 			String h = e.getKey();
 			String p = e.getValue();
+			
+			int poolSize = targets.getMaxpool().containsKey(h) ? targets.getMaxpool().get(h) : 1;
+			
 			if(p.contains(","))
 			{
 				for(String s : p.split(","))
 				{
 					try {
-						out.add(new OutboundEndpoint(h, Integer.valueOf(s)));
+						OutboundEndpoint ep = new OutboundEndpoint(h, Integer.valueOf(s));
+						ep.setMaxConnections(poolSize);
+						out.add(ep);
 					} catch (NumberFormatException e1) {
 						throw new IllegalArgumentException("Unparseable port "+s);
 					}
@@ -128,7 +134,9 @@ class TCPConnector implements Runnable{
 			else
 			{
 				try {
-					out.add(new OutboundEndpoint(h, Integer.valueOf(p)));
+					OutboundEndpoint ep = new OutboundEndpoint(h, Integer.valueOf(p));
+					ep.setMaxConnections(poolSize);
+					out.add(ep);
 				} catch (NumberFormatException e1) {
 					throw new IllegalArgumentException("Unparseable port "+p);
 				}

@@ -75,7 +75,16 @@ public class Config {
 			this.target = target;
 		}
 
+		public Map<String, Integer> getMaxpool() {
+			return maxpool;
+		}
+
+		public void setMaxpool(Map<String, Integer> maxpool) {
+			this.maxpool = maxpool;
+		}
+
 		private Map<String, String> target;
+		private Map<String, Integer> maxpool;
 	}
 	private Thread monitorThread;
 	@PostConstruct

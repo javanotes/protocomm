@@ -5,6 +5,8 @@ public interface Endpoint {
 	String getHost();
 
 	int getPort();
+	
+	boolean isInitiated();
 
 	TunnelOutboundHandler getTunnelOutHandler();
 
