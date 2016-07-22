@@ -1,12 +1,18 @@
-package com.reactiva.emulator.netty.gw.algo;
+package com.reactiva.emulator.netty.gw.bal;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class WeightedBalancingStrategy<T extends Target> extends CircularBalancingStrategy<T> {
+import com.reactiva.emulator.netty.gw.bal.Target.Algorithm;
 
+class WeightedBalancingStrategy<T extends Target> extends RoundRobinBalancingStrategy<T> {
+
+	@Override
+	public Algorithm strategy() {
+		return Algorithm.WEIGHTED;
+	}
 	private final LinkedList<T> targets;
 	public WeightedBalancingStrategy(List<T> targets) {
 		this.targets = new LinkedList<>();

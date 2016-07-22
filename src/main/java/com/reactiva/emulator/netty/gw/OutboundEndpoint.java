@@ -1,23 +1,26 @@
 package com.reactiva.emulator.netty.gw;
 
 import java.io.Closeable;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.math.BigDecimal;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.reactiva.emulator.netty.gw.bal.Target;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.pool.ChannelPoolHandler;
 /**
  * 
  * @author esutdal
  *
  */
-public class OutboundEndpoint implements Closeable{
+public class OutboundEndpoint implements Closeable, Target, ChannelPoolHandler, Endpoint{
 
 	/*
 	 * 	The possible state transitions for TCP based child and client channels are:
@@ -101,7 +104,7 @@ public class OutboundEndpoint implements Closeable{
     private static final int OPEN = 0;
     private static final int CLOSING = 2;
     private TunnelOutboundHandler tunnelOutHandler;
-   
+    TunnelInboundHandler tunnelInHandler;
     /**
      * 
      * @author esutdal
@@ -112,11 +115,11 @@ public class OutboundEndpoint implements Closeable{
 
 		@Override
 		public void operationComplete(ChannelFuture future) {
+			tunnelInHandler.endReconnectionAttempt(OutboundEndpoint.this.toString());
 			if (future.isSuccess()) {
 				synchronized (channelState) {
 					//inboundChannel.read();
 					channelState.compareAndSet(OPEN, READY);
-					reconnectHosts.remove(OutboundEndpoint.this.toString());
 					channelState.notifyAll();
 					log.info("Successfully created tunnel to {} on LoadBalancer with id '{}'.",
 							outboundChannel.remoteAddress(), OutboundEndpoint.this.hashCode());
@@ -133,6 +136,7 @@ public class OutboundEndpoint implements Closeable{
     }
     
     private Channel outboundChannel;
+    
     private final AtomicInteger channelState = new AtomicInteger(OPEN);
     /**
      * Associate a channel to this instance.
@@ -179,7 +183,14 @@ public class OutboundEndpoint implements Closeable{
     			&& outboundChannel.isActive() 
     			&& channelState.compareAndSet(READY, READY);
     }
-    
+    /**
+     * Override this method to use a connection pool.
+     * @return
+     */
+    private Channel getOutChannel()
+    {
+    	return outboundChannel;
+    }
     /**
      * Write to this endpoint.
      * @param ctx
@@ -188,7 +199,8 @@ public class OutboundEndpoint implements Closeable{
     void write(final ChannelHandlerContext ctx, Object msg)
     {
     	log.debug("FORWARD TUNNEL WRITE => client 2 server");
-		outboundChannel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
+    	
+		getOutChannel().writeAndFlush(msg).addListener(new ChannelFutureListener() {
 			
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception {
@@ -202,11 +214,19 @@ public class OutboundEndpoint implements Closeable{
     
     // getters & setters ----------------------------------------------------------------------------------------------
 
-    public String getHost() {
+    /* (non-Javadoc)
+	 * @see com.reactiva.emulator.netty.gw.Endpoint#getHost()
+	 */
+    @Override
+	public String getHost() {
         return host;
     }
 
-    public int getPort() {
+    /* (non-Javadoc)
+	 * @see com.reactiva.emulator.netty.gw.Endpoint#getPort()
+	 */
+    @Override
+	public int getPort() {
         return port;
     }
 
@@ -233,10 +253,18 @@ public class OutboundEndpoint implements Closeable{
 		close0();
 	}
 
+	/* (non-Javadoc)
+	 * @see com.reactiva.emulator.netty.gw.Endpoint#getTunnelOutHandler()
+	 */
+	@Override
 	public TunnelOutboundHandler getTunnelOutHandler() {
 		return tunnelOutHandler;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.reactiva.emulator.netty.gw.Endpoint#setTunnelOutHandler(com.reactiva.emulator.netty.gw.TunnelOutboundHandler)
+	 */
+	@Override
 	public void setTunnelOutHandler(TunnelOutboundHandler tunnelOutHandler) {
 		this.tunnelOutHandler = tunnelOutHandler;
 	}
@@ -248,8 +276,72 @@ public class OutboundEndpoint implements Closeable{
 	public void setInitiated(boolean initiated) {
 		this.initiated = initiated;
 	}
-	private ConcurrentSkipListSet<String> reconnectHosts;
-	public void setHostConnSet(ConcurrentSkipListSet<String> reconnectHosts) {
-		this.reconnectHosts = reconnectHosts;
+	
+	private final AtomicInteger activeConnections = new AtomicInteger();
+	int incrConnection() {
+		return activeConnections.incrementAndGet();
+	}
+
+	int decrConnection() {
+		return activeConnections.decrementAndGet();
+	}
+
+	@Override
+	public String identifier() {
+		return toString();
+	}
+
+	private int weight = 0;
+	public void setWeight(int weight) {
+		this.weight = weight;
+	}
+
+	@Override
+	public int weight() {
+		return weight;
+	}
+
+	@Override
+	public int connections() {
+		return activeConnections.get();
+	}
+
+	@Override
+	public long ping() {
+		return responseCount > 0 ? BigDecimal.valueOf(responseTimeAggr/responseCount).longValue() : Long.MAX_VALUE;
+	}
+
+	@Override
+	public boolean responding() {
+		return isReady();
+	}
+
+	private volatile long responseTimeAggr = 0;
+	private volatile long responseCount = 0;
+	/**
+	 * 
+	 * @param l
+	 */
+	synchronized void fireResponseTime(long l) {
+		responseTimeAggr += l;
+		responseCount++;
+	}
+
+	@Override
+	public void channelReleased(Channel ch) throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void channelAcquired(Channel ch) throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void channelCreated(Channel ch) throws Exception {
+		// TODO Auto-generated method stub
+		
 	}
 }

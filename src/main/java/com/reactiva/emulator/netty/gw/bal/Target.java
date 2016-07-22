@@ -1,4 +1,4 @@
-package com.reactiva.emulator.netty.gw.algo;
+package com.reactiva.emulator.netty.gw.bal;
 
 import java.io.Closeable;
 
@@ -9,11 +9,8 @@ import java.io.Closeable;
  *
  */
 public interface Target extends Closeable{
-	/**
-	 * Restart a node when not responding
-	 */
-	public void restart() throws Exception;
 	
+	public enum Algorithm{ROUNDROBIN, WEIGHTED, LEASTCONNECTION, FASTEST}
 	/**
 	 * 
 	 * @return an identifier for a particular node

@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Client {
 
@@ -47,8 +49,9 @@ public class Client {
 			s.close();
 		}
 	}
-	static int iter = 1000, port = 8093;
+	static int iter = 10, port = 8093;
 	public static void main(String[] args) throws UnknownHostException, IOException {
+		ExecutorService ex = Executors.newFixedThreadPool(2);
 		for (int i = 0; i < iter; i++) {
 			send("HELLO SOMOS "+i);
 		}

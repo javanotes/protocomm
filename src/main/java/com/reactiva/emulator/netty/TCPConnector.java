@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import com.reactiva.emulator.netty.Config.HostAndPort;
-import com.reactiva.emulator.netty.gw.CircularBalancingHandler;
+import com.reactiva.emulator.netty.gw.TunnelInboundHandler;
 import com.reactiva.emulator.netty.gw.OutboundEndpoint;
 import com.reactiva.emulator.netty.sh.BasicChannelHandler;
 import com.reactiva.emulator.netty.sh.RequestConvertorHandlerFactory;
@@ -90,7 +90,7 @@ class TCPConnector implements Runnable{
 	
 	private final boolean proxy;
 	private Config config;
-	private CircularBalancingHandler balancer;
+	private TunnelInboundHandler balancer;
 	/**
 	 * A TCP connector which can act as a server or proxy.
 	 * @param port
@@ -159,7 +159,7 @@ class TCPConnector implements Runnable{
 	private void open()
 	{
 		if (proxy) {
-			balancer = new CircularBalancingHandler(loadTargets());
+			balancer = new TunnelInboundHandler(loadTargets());
 		}
 		
 		boss = new NioEventLoopGroup(1, new ThreadFactory() {
