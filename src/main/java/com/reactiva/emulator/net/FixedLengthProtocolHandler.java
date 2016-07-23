@@ -29,19 +29,17 @@ SOFTWARE.
 package com.reactiva.emulator.net;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 /**
  * A base class for handling fixed length byte messages. These type of streams 
  * would specify the total number of bytes to read, in their initial byte/s.
  */
-public class FixedLengthProtocolHandler extends AbstractProtocolHandler {
+public abstract class FixedLengthProtocolHandler extends AbstractProtocolHandler {
 
   public FixedLengthProtocolHandler() {
     super();
@@ -50,10 +48,6 @@ public class FixedLengthProtocolHandler extends AbstractProtocolHandler {
   private int lengthOffset = INT_OFFSET;
   protected int length = -1;
   
-  @Override
-  public byte[] doProcess(DataInputStream dataInputStream) throws Exception {
-    return "".getBytes(StandardCharsets.UTF_8);
-  }
   /**
    * Extract the length of data bytes based on the length offset numeric type.
    * Say for an {@linkplain ProtocolHandler#INT_OFFSET int offset}, the first 4 bytes

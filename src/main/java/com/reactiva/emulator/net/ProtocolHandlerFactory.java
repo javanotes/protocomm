@@ -28,6 +28,15 @@ SOFTWARE.
 */
 package com.reactiva.emulator.net;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
+import javax.annotation.PostConstruct;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
 
 /**
@@ -37,11 +46,29 @@ import org.springframework.beans.factory.FactoryBean;
  */
 public class ProtocolHandlerFactory implements FactoryBean<ProtocolHandler>{
 
+	private static Logger log = LoggerFactory.getLogger(ProtocolHandlerFactory.class);
   @Override
   public ProtocolHandler getObject()  {
-    return new FixedLengthProtocolHandler();
+    return new FixedLengthProtocolHandler(){
+    	
+		@Override
+		protected void execute(DataInputStream in, DataOutputStream out) throws IOException {
+			log.info("FixedLengthProtocolHandler() {...}.doProcess()");
+    		int len = in.readInt();
+    		byte[] b = new byte[len-4];
+    		in.readFully(b);
+    		String req = (new String(b, StandardCharsets.UTF_8));
+    	    out.writeUTF("Processing request:: "+req);
+			
+		}
+    };
   }
 
+  @PostConstruct
+  void init()
+  {
+	  log.info("ProtocolHandlerFactory.init()");
+  }
   @Override
   public Class<?> getObjectType() {
     return ProtocolHandler.class;

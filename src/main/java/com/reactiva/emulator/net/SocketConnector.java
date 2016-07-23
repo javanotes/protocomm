@@ -63,10 +63,11 @@ class SocketConnector implements Closeable, Runnable{
    * @param channel
    * @throws IOException
    */
-  SocketConnector(SocketChannel channel, ProtocolHandler handler) 
+  SocketConnector(SocketChannel channel, ProtocolHandler handler, boolean closeOnFlush) 
   {
     this.channel = channel;
     this.handler = handler;
+    this.closeOnFlush = closeOnFlush;
     connId = hashCode();
     log.info("New socket connection# "+connId);
   }
@@ -91,7 +92,7 @@ class SocketConnector implements Closeable, Runnable{
       return complete;
       
     } catch (IOException e) {
-      log.warn(e.getMessage());
+    	log.warn("Closing client connection on read error",  e);
       try {
         close();
       } catch (IOException e1) {
@@ -116,16 +117,32 @@ class SocketConnector implements Closeable, Runnable{
     }
   }
   private ByteBuffer writeBuff;
-    
+  private final boolean closeOnFlush;  
+  private void flush() throws IOException
+  {
+	  channel.finishConnect();
+	  if (writeBuff != null) {
+	      writeBuff.clear();
+	    } 
+  }
   private void doWrite()
   {
     try 
     {
-      channel.write(writeBuff);
-      if(!writeBuff.hasRemaining())
-        close();
+      while (writeBuff.hasRemaining()) {
+		channel.write(writeBuff);
+      }
+      if(closeOnFlush){
+		  close();
+	  }
+	  else
+	  {
+		  selKey.interestOps(SelectionKey.OP_READ);
+	      selKey.selector().wakeup();
+	  }
+    	
     } catch (IOException e) {
-      log.warn(e.getMessage());
+      log.warn("Closing client connection on write error",  e);
       try {
         close();
       } catch (IOException e1) {
@@ -136,13 +153,9 @@ class SocketConnector implements Closeable, Runnable{
         
   @Override
   public void close() throws IOException {
-    channel.finishConnect();
+    flush();
     channel.close();
     selKey.cancel();
-    if (writeBuff != null) {
-      writeBuff.clear();
-      writeBuff = null;
-    }
     handler.close();
     log.info("Connection closed# "+connId);
   }

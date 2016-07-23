@@ -21,6 +21,7 @@ public class Client {
 			byte[] req = msg.getBytes(StandardCharsets.UTF_8);
 			out.writeInt(req.length+4);
 			out.write(req);
+			out.writeInt(0);
 			out.flush();
 			System.out.println("Client => "+msg +"\t" + in.readUTF());
 		} finally {
@@ -50,7 +51,7 @@ public class Client {
 			s.close();
 		}
 	}
-	static int iter = 10, port = 8093, concurrency = 4;
+	static int iter = 100, port = 8093, concurrency = 3;
 	public static void main(String[] args) throws UnknownHostException, IOException {
 		ExecutorService ex = Executors.newFixedThreadPool(2);
 		for (int i = 0; i < concurrency; i++) {

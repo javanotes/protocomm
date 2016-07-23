@@ -30,6 +30,8 @@ package com.reactiva.emulator.net;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
@@ -74,6 +76,18 @@ public abstract class AbstractProtocolHandler implements ProtocolHandler {
 	 * io.DataInputStream)
 	 */
 	@Override
-	public abstract byte[] doProcess(DataInputStream dataInputStream) throws Exception;
+	public byte[] doProcess(DataInputStream dataInputStream) throws Exception
+	{
+		ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+		execute(dataInputStream, new DataOutputStream(bOut));
+		return bOut.toByteArray();
+	}
+	/**
+	 * 
+	 * @param in
+	 * @param out
+	 * @throws IOException 
+	 */
+	protected abstract void execute(DataInputStream in, DataOutputStream out) throws IOException;
 
 }

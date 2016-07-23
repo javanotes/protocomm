@@ -17,7 +17,7 @@ import com.reactiva.emulator.xcomm.sh.RequestProcessorHandler;
 import com.reactiva.emulator.xcomm.sh.ResponseConvertorHandler;
 import com.reactiva.emulator.xcomm.sh.TerminalHandler;
 
-@Configuration
+//@Configuration
 public class Config {
 
 	boolean isProxyMode() {

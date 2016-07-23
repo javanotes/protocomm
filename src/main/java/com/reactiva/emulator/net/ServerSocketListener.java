@@ -39,10 +39,8 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -123,7 +121,7 @@ public class ServerSocketListener implements Server{
    * @throws IOException
    */
   public ServerSocketListener(int port, int maxThread) throws IOException {
-    this(port, DEFAULT_READ_BUFF_SIZE, maxThread, 1, 1);
+    this(port, DEFAULT_READ_BUFF_SIZE, maxThread, maxThread, 1);
     
   }
 
@@ -150,7 +148,7 @@ public class ServerSocketListener implements Server{
     // Create a new non-blocking server socket channel
     serverChannel = ServerSocketChannel.open();
     serverChannel.configureBlocking(false);
-
+    
     // Bind the server socket to the specified address and port
     InetSocketAddress isa = new InetSocketAddress(port);
     try {
@@ -172,21 +170,22 @@ public class ServerSocketListener implements Server{
       private int threadCounter = 0;
       @Override
       public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "io-task-"+threadCounter++);
+        Thread t = new Thread(r, "xcomm-io-"+threadCounter++);
         return t;
       }
     });
     
     //execThreadPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
     
-    execThreadPool = new ThreadPoolExecutor(minExecutorThreadCount, maxExecutorThreadCount, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(1024), new ThreadFactory() {
-      private int threadCounter = 0;
-      @Override
-      public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "exec-task-"+threadCounter++);
-        return t;
-      }
-    });
+    execThreadPool = Executors.newFixedThreadPool(maxExecutorThreadCount, new ThreadFactory() {
+        
+        private int threadCounter = 0;
+        @Override
+        public Thread newThread(Runnable r) {
+          Thread t = new Thread(r, "xcomm-exec-"+threadCounter++);
+          return t;
+        }
+      });
     
     acceptors = new LinkedList<>();
     for(int i=0; i<acceptorThreadCount; i++)
@@ -211,7 +210,7 @@ public class ServerSocketListener implements Server{
 
     SocketChannel socketChannel = serverChannel.accept();
     socketChannel.configureBlocking(false);
-    SocketConnector conn = new SocketConnector(socketChannel, protoFactory.getObject());
+    SocketConnector conn = new SocketConnector(socketChannel, protoFactory.getObject(), false);
     //round robin dispatch
     SocketAcceptor sa = acceptors.remove();
     try {

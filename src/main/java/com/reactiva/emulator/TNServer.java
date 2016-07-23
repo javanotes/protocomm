@@ -28,7 +28,6 @@ SOFTWARE.
 */
 package com.reactiva.emulator;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -36,11 +35,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 @SpringBootApplication
 public class TNServer {
 
-  @Value("${server.port:6985}")
-  private int port;
-  @Value("${server.io-threads:1}")
-  private int ioThreads;
-      
+        
   public static void main(String[] args) {
 	  new SpringApplicationBuilder()
 	    .bannerMode(Banner.Mode.OFF)
