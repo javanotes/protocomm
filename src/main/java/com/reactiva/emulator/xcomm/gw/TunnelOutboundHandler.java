@@ -30,12 +30,12 @@ class TunnelOutboundHandler extends ChannelInboundHandlerAdapter {
 	}
 	
 	@Override
-    public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead(final ChannelHandlerContext hostCtx, Object msg) throws Exception {
 		log.debug("REVERSE TUNNEL WRITE => server 2 client");
 		getClientChannel().writeAndFlush(msg).addListener(new ChannelFutureListener() {
 	        @Override
 	        public void operationComplete(ChannelFuture future) {
-	        	ctx.channel().read();
+	        	hostCtx.channel().read();
 	        	log.debug("REVERSE TUNNEL WRITE complete");
 	        }
 		});

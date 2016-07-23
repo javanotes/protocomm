@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 /**
  * The handler class to use the server as a proxy gateway.
@@ -160,12 +161,12 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
      */
     protected void initTunnel(OutboundEndpoint h, long await, TimeUnit unit) throws InterruptedException
     {
-    	log.info("<< Negotiating target destination "+h+" with pool of size "+h.getMaxConnections()+" >>");
+    	log.info("Negotiating destination "+h+" with pool of size "+h.getMaxConnections());
     	TunnelOutboundHandler tunnelOutHdlr = new TunnelOutboundHandler();
 		// Start the connection attempt.
 		Bootstrap b = new Bootstrap();
 		b
-		.group(EventLoops.get())
+		.group(eventLoops)
 		.channel(NioSocketChannel.class)
 		.handler(tunnelOutHdlr)
 		.option(ChannelOption.AUTO_READ, true)
@@ -197,7 +198,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 			if (!h.isInitiated()) {
 				try 
 				{
-					h.tunnelInHandler = this;
+					h.setTunnelInHandler(this);
 					initTunnel(h, 1, TimeUnit.SECONDS);
 				} catch (InterruptedException e) {
 					interrupt = true;
@@ -215,5 +216,12 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 	void endReconnectionAttempt(String host) {
 		reconnectingHosts.remove(host);
 		
+	}
+	private NioEventLoopGroup eventLoops;
+	public NioEventLoopGroup getEventLoops() {
+		return eventLoops;
+	}
+	public void setEventLoops(NioEventLoopGroup worker) {
+		eventLoops = worker;
 	}
 }

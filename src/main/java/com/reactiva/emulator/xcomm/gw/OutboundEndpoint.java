@@ -119,7 +119,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     private static final int OPEN = 0;
     private static final int CLOSING = 2;
     private TunnelOutboundHandler tunnelOutHandler;
-    TunnelInboundHandler tunnelInHandler;
+    private TunnelInboundHandler tunnelInHandler;
     /**
      * 
      * @author esutdal
@@ -130,10 +130,9 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 
 		@Override
 		public void operationComplete(ChannelFuture future) {
-			tunnelInHandler.endReconnectionAttempt(OutboundEndpoint.this.toString());
+			getTunnelInHandler().endReconnectionAttempt(OutboundEndpoint.this.toString());
 			if (future.isSuccess()) {
 				synchronized (channelState) {
-					//inboundChannel.read();
 					channelState.compareAndSet(OPEN, READY);
 					channelState.notifyAll();
 					log.info("Successfully created tunnel to {} on LoadBalancer with id '{}'.",
@@ -141,7 +140,6 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 					
 					if (maxConnections > 1) {
 						b.remoteAddress(future.channel().remoteAddress());
-						b = b.clone(EventLoops.get());
 						pooledChannels = new FixedChannelPool(b, OutboundEndpoint.this, maxConnections - 1);
 					}
 				}
@@ -169,8 +167,11 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 	}
 	private final SynchronousQueue<Channel> pooledChannelSyncQ = new SynchronousQueue<>();
 	/**
-	 * Try acquire a pooled channel.
+	 * @deprecated Does not work as intended due to the single threaded model of
+	 * Netty. A channel and its related task IO or event, is always pinned to the same
+	 * thread.<p>
 	 * @return
+	 * 
 	 */
 	private Channel acquirePooledChannel()
 	{
@@ -206,7 +207,11 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 				}
 			});
 			try {
-				return pooledChannelSyncQ.poll(10, TimeUnit.MILLISECONDS);
+				Channel ch = pooledChannelSyncQ.poll(10, TimeUnit.MILLISECONDS);
+				if (ch != null) {
+					log.info("acquirePooledChannel::inEventLoop ? " + ch.eventLoop().inEventLoop());
+				}
+				return ch;
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
@@ -267,12 +272,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
      */
     private PooledOrUnpooled getOutChannel()
     {
-    	Channel ch = acquirePooledChannel();
-    	//TODO: pooling is disabled. and thus so is 
-    	//server side multithreading! this is because
-    	//Netty pins a channel to a particular thread
-    	//to avoid locking
-    	ch = null;
+    	Channel ch = null;//acquirePooledChannel();
     	return ch == null ? new PooledOrUnpooled(outboundChannel, false) : new PooledOrUnpooled(ch, true);
     }
     /**
@@ -292,6 +292,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 				log.debug("Making reverse tunnel ready");
 				if(pooled.pooled)
 				{
+					log.debug("writeoperationComplete::inEventLoop ? "+pooled.channel.eventLoop().inEventLoop());
 					pooledChannels.release(pooled.channel);
 				}
 				//don't request read here
@@ -422,20 +423,28 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 
 	@Override
 	public void channelReleased(Channel ch) throws Exception {
-		log.info("channelReleased: "+ch.remoteAddress());
+		log.debug("channelReleased: "+ch.remoteAddress());
 		
 	}
 
 	@Override
 	public void channelAcquired(Channel ch) throws Exception {
-		log.info("channelAcquired: "+ch.remoteAddress());
+		log.debug("channelAcquired: "+ch.remoteAddress());
 		
 	}
 
 	@Override
 	public void channelCreated(Channel ch) throws Exception {
-		log.info("channelCreated: "+ch.remoteAddress());
+		log.debug("channelCreated: "+ch.remoteAddress());
 		
+	}
+
+	public TunnelInboundHandler getTunnelInHandler() {
+		return tunnelInHandler;
+	}
+
+	void setTunnelInHandler(TunnelInboundHandler tunnelInHandler) {
+		this.tunnelInHandler = tunnelInHandler;
 	}
 
 }

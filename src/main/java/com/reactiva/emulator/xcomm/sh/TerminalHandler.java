@@ -20,12 +20,22 @@ public class TerminalHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception { 
 		try 
         {
-			log.debug("End processing");
-			ChannelFuture cf = ctx.writeAndFlush(msg);
-        	if(closeOnFlush)
-        	{
-        		cf.addListener(ChannelFutureListener.CLOSE);
-        	}
+			
+			ctx.writeAndFlush(msg).addListener(new ChannelFutureListener() {
+				
+				@Override
+				public void operationComplete(ChannelFuture future) throws Exception {
+					if(future.isSuccess())
+						log.debug("End processing");
+					
+					if(closeOnFlush)
+		        	{
+		        		future.channel().close();
+		        	}
+					
+				}
+			});
+        	
         } finally {
             ReferenceCountUtil.release(msg);
             
