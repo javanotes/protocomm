@@ -6,16 +6,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.RejectedExecutionHandler;
 import io.netty.util.concurrent.SingleThreadEventExecutor;
 
 class ConcurrentEventExecutor extends SingleThreadEventExecutor {
 
-	private static final Logger log = LoggerFactory.getLogger(ConcurrentEventExecutor.class);
 	private ExecutorService fj;
 	
 	/**
@@ -67,7 +63,7 @@ class ConcurrentEventExecutor extends SingleThreadEventExecutor {
 		
 		for (;;) 
 		{
-            Runnable task = takeTask();
+            final Runnable task = takeTask();
             if (task != null) {
             	fj.submit(new Runnable() {
 					

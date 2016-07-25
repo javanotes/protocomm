@@ -161,7 +161,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
      */
     protected void initTunnel(OutboundEndpoint h, long await, TimeUnit unit) throws InterruptedException
     {
-    	log.info("Negotiating destination "+h+" with pool of size "+h.getMaxConnections());
+    	log.info("Negotiating destination "+h);
     	TunnelOutboundHandler tunnelOutHdlr = new TunnelOutboundHandler();
 		// Start the connection attempt.
 		Bootstrap b = new Bootstrap();
@@ -172,12 +172,11 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		.option(ChannelOption.AUTO_READ, true)
 		.option(ChannelOption.SO_KEEPALIVE, true)
 		.option(ChannelOption.SO_REUSEADDR, true)
-		//.option(ChannelOption.SO_LINGER, 2)
 		;
 		
 		ChannelFuture f = b.connect(h.getHost(), h.getPort());
 		
-		h.associate(f, b);
+		h.associate(f);
 
 		if (await > 0) {
 			if (!h.awaitReady(await, unit)) {
@@ -218,9 +217,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		
 	}
 	private NioEventLoopGroup eventLoops;
-	public NioEventLoopGroup getEventLoops() {
-		return eventLoops;
-	}
+	
 	public void setEventLoops(NioEventLoopGroup worker) {
 		eventLoops = worker;
 	}

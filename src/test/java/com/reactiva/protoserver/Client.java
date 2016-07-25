@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Client {
 
-	static void send(String msg) throws UnknownHostException, IOException
+	static void sendRequest(String msg) throws UnknownHostException, IOException
 	{
 		Socket s = new Socket("localhost", port);
 		try {
@@ -21,7 +21,6 @@ public class Client {
 			byte[] req = msg.getBytes(StandardCharsets.UTF_8);
 			out.writeInt(req.length+4);
 			out.write(req);
-			out.writeInt(0);
 			out.flush();
 			System.out.println("Client => "+msg +"\t" + in.readUTF());
 		} finally {
@@ -29,29 +28,26 @@ public class Client {
 		}
 	}
 	
-	static void send2(String msg) throws UnknownHostException, IOException
+	static void sendRequests(String msg) throws UnknownHostException, IOException
 	{
 		Socket s = new Socket("localhost", port);
 		try {
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
 			DataInputStream in = new DataInputStream(s.getInputStream());
-			byte[] req = msg.getBytes(StandardCharsets.UTF_8);
-			
-			out.writeInt(req.length+4);
-			out.write(req);
-			out.flush();
-			System.out.println("Client1 => "+msg +"\t" + in.readUTF());
-			
-			out.writeInt(req.length+4);
-			out.write(req);
-			out.flush();
-			System.out.println("Client2 => "+msg +"\t" + in.readUTF());
-			
+			for (int i = 0; i < cycle; i++) {
+				
+				byte[] req = (msg + "Request# "+i).getBytes(StandardCharsets.UTF_8);
+				out.writeInt(req.length + 4);
+				out.write(req);
+				out.flush();
+				System.out.println("Client => " + msg + "\t" + in.readUTF());
+			}
 		} finally {
 			s.close();
 		}
 	}
-	static int iter = 100, port = 8093, concurrency = 3;
+	
+	static int iter = 10, port = 8081, concurrency = 4, cycle = 100;
 	public static void main(String[] args) throws UnknownHostException, IOException {
 		ExecutorService ex = Executors.newFixedThreadPool(2);
 		for (int i = 0; i < concurrency; i++) {
@@ -61,7 +57,8 @@ public class Client {
 				public void run() {
 					for (int i = 0; i < iter; i++) {
 						try {
-							send("HELLO SOMOS " + i);
+							//sendRequest("HELLO SOMOS " + i);
+							sendRequests("HELLO SOMOS " + i);
 						} catch (IOException e) {
 							e.printStackTrace();
 						}

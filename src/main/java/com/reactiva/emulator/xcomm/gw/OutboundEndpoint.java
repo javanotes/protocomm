@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import com.reactiva.emulator.xcomm.gw.bal.Target;
 
-import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -91,27 +90,18 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 		return true;
 	}
 
-	/**
-     * 
-     * @param host
-     * @param port
-     */
-    public OutboundEndpoint(String host, int port) {
-        this(host, port, 1);
-    }
     /**
      * 
      * @param host
      * @param port
      * @param maxConn
      */
-    public OutboundEndpoint(String host, int port, int maxConn) {
+    public OutboundEndpoint(String host, int port) {
         if ((port < 0) || (port > 65536)) {
             throw new IllegalArgumentException("Port must be in range 0-65536");
         }
         this.host = host;
         this.port = port;
-        this.maxConnections = maxConn;
     }
     
     private static final int READY = 1;
@@ -138,10 +128,6 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 					log.info("Successfully created tunnel to {} on LoadBalancer with id '{}'.",
 							outboundChannel.remoteAddress(), OutboundEndpoint.this.hashCode());
 					
-					if (maxConnections > 1) {
-						b.remoteAddress(future.channel().remoteAddress());
-						pooledChannels = new FixedChannelPool(b, OutboundEndpoint.this, maxConnections - 1);
-					}
 				}
 			} else {
 				synchronized (channelState) {
@@ -157,14 +143,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     private Channel outboundChannel;
     
     private final AtomicInteger channelState = new AtomicInteger(OPEN);
-	private int maxConnections = 3;
-    public int getMaxConnections() {
-		return maxConnections;
-	}
-
-	public void setMaxConnections(int maxConnections) {
-		this.maxConnections = maxConnections;
-	}
+	
 	private final SynchronousQueue<Channel> pooledChannelSyncQ = new SynchronousQueue<>();
 	/**
 	 * @deprecated Does not work as intended due to the single threaded model of
@@ -218,17 +197,15 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 		}
 		return null;
 	}
-	private Bootstrap b;
 	/**
      * Associate a channel to this instance.
      * @param f
      * @param b 
      * @param inboundChannel 
      */
-    synchronized void associate(ChannelFuture f, Bootstrap b)
+    synchronized void associate(ChannelFuture f)
     {
     	close0();
-    	this.b = b;
     	f.addListener(new ChannelReadyListener());
     	outboundChannel = f.channel();
     	    	

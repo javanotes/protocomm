@@ -28,6 +28,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.util.concurrent.DefaultEventExecutor;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.RejectedExecutionHandler;
@@ -54,7 +55,7 @@ class TCPConnector implements Runnable{
 		ch.pipeline().addLast(executor, decoder.getObject(), processor, encoder);
 		ch.pipeline().addLast(executor, terminal);
 		
-		//ch.pipeline().addLast(bch);
+		//ch.pipeline().addLast(executor, bch);
 	}
 	/**
 	 * 
@@ -123,15 +124,12 @@ class TCPConnector implements Runnable{
 			String h = e.getKey();
 			String p = e.getValue();
 			
-			//int poolSize = targets.getMaxpool().containsKey(h) ? targets.getMaxpool().get(h) : 1;
-			
 			if(p.contains(","))
 			{
 				for(String s : p.split(","))
 				{
 					try {
 						OutboundEndpoint ep = new OutboundEndpoint(h, Integer.valueOf(s));
-						ep.setMaxConnections(1);
 						out.add(ep);
 					} catch (NumberFormatException e1) {
 						throw new IllegalArgumentException("Unparseable port "+s);
@@ -142,7 +140,6 @@ class TCPConnector implements Runnable{
 			{
 				try {
 					OutboundEndpoint ep = new OutboundEndpoint(h, Integer.valueOf(p));
-					ep.setMaxConnections(1);
 					out.add(ep);
 				} catch (NumberFormatException e1) {
 					throw new IllegalArgumentException("Unparseable port "+p);
@@ -182,8 +179,24 @@ class TCPConnector implements Runnable{
 	 */
 	private void open()
 	{
-		eventLoop = new NioEventLoopGroup(ioThreads);
-		bossLoop = new NioEventLoopGroup(1);
+		eventLoop = new NioEventLoopGroup(ioThreads, new ThreadFactory() {
+			int n = 1;
+
+			@Override
+			public Thread newThread(Runnable r) {
+				Thread t = new Thread(r, "xcomm-io-" + (n++));
+				return t;
+			}
+		});
+		bossLoop = new NioEventLoopGroup(1, new ThreadFactory() {
+			int n = 1;
+
+			@Override
+			public Thread newThread(Runnable r) {
+				Thread t = new Thread(r, "xcomm-accept-" + (n++));
+				return t;
+			}
+		});
 		if (proxy) {
 			balancer = new TunnelInboundHandler(loadTargets());
 		}
@@ -191,28 +204,30 @@ class TCPConnector implements Runnable{
 		if (proxy) {
 			balancer.setEventLoops(eventLoop);
 		}
-		executor = new DefaultEventExecutorGroup(1, new ThreadFactory() {
-			int n=1;
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread t = new Thread(r, "xcomm-nio-"+(n++));
-				return t;
-			}
-		})
-		{
-			@Override
-		    protected EventExecutor newChild(Executor executor, Object... args) throws Exception {
-				return new ConcurrentEventExecutor(this, executor, (Integer) args[0], (RejectedExecutionHandler) args[1], eventThreads);
-				//return new DefaultEventExecutor(this, executor, (Integer) args[0], (RejectedExecutionHandler) args[1]);
-		    }
-		};
-		
+		if (eventThreads > 0) {
+			executor = new DefaultEventExecutorGroup(eventThreads, new ThreadFactory() {
+				int n = 0;
+				@Override
+				public Thread newThread(Runnable arg0) {
+					Thread t = new Thread(arg0, "xcomm-exec-"+(n++));
+					return t;
+				}
+			}) 
+			{
+				@Override
+				protected EventExecutor newChild(Executor executor, Object... args) throws Exception {
+					//ConcurrentEventExecutor not working consistently
+					/*return new ConcurrentEventExecutor(this, executor, (Integer) args[0],
+							(RejectedExecutionHandler) args[1], eventThreads);*/
+					return new DefaultEventExecutor(this, executor, (Integer) args[0], (RejectedExecutionHandler) args[1]);
+				}
+			};
+		}
 		server = new ServerBootstrap()
 				.group(bossLoop, eventLoop)
 				.channel(NioServerSocketChannel.class)
 				.childHandler(new Handlers())
 				.option(ChannelOption.SO_BACKLOG, 256)    
-	            .childOption(ChannelOption.SO_KEEPALIVE, true)
 	            ;
 	}
 	

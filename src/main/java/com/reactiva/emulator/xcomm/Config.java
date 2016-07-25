@@ -17,7 +17,7 @@ import com.reactiva.emulator.xcomm.sh.RequestProcessorHandler;
 import com.reactiva.emulator.xcomm.sh.ResponseConvertorHandler;
 import com.reactiva.emulator.xcomm.sh.TerminalHandler;
 
-//@Configuration
+@Configuration
 public class Config {
 
 	boolean isProxyMode() {
@@ -54,7 +54,7 @@ public class Config {
 	int protoLenOffset;
 	@Value("${server.proto.len.bytes: 4}")
 	int protoLenBytes;
-	@Value("${server.proto.closeOnFlush: false}")
+	@Value("${server.proto.close-on-flush: false}")
 	boolean closeOnFlush;
 	@Bean
 	@ConfigurationProperties(prefix = "server.gw")
@@ -78,16 +78,7 @@ public class Config {
 			this.target = target;
 		}
 
-		/*public Map<String, Integer> getMaxpool() {
-			return maxpool;
-		}
-
-		public void setMaxpool(Map<String, Integer> maxpool) {
-			this.maxpool = maxpool;
-		}*/
-
 		private Map<String, String> target;
-		//private Map<String, Integer> maxpool;
 	}
 	private Thread monitorThread;
 	@PostConstruct
