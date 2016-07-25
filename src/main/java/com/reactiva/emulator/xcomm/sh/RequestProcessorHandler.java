@@ -29,11 +29,13 @@ public class RequestProcessorHandler extends MessageToMessageDecoder<Request> {
 	 */
 	protected Response doProcess(Request request) throws Exception
 	{
-		log.info("Processing request..");
+		
 		//TODO override
 		Response r = new Response();
 		r.setPayload("Got request => "+request.getPayload());
-		
+		if (log.isDebugEnabled()) {
+			log.debug("## Setting response [" + r.getPayload() + "]");
+		}
 		return r;
 		
 	}

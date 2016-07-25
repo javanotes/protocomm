@@ -65,6 +65,9 @@ class TCPConnector implements Runnable{
 	protected void proxyHandlers(SocketChannel ch) throws Exception
 	{
 		ch.pipeline().addLast(balancer);
+		log.warn("*************************");
+		log.warn("        !UNSTABLE!         ");
+		log.warn("*************************");
 	}
 	
 	/**
@@ -201,15 +204,12 @@ class TCPConnector implements Runnable{
 			balancer = new TunnelInboundHandler(loadTargets());
 		}
 		
-		if (proxy) {
-			balancer.setEventLoops(eventLoop);
-		}
 		if (eventThreads > 0) {
 			executor = new DefaultEventExecutorGroup(eventThreads, new ThreadFactory() {
 				int n = 0;
 				@Override
 				public Thread newThread(Runnable arg0) {
-					Thread t = new Thread(arg0, "xcomm-exec-"+(n++));
+					Thread t = new Thread(arg0, "xcomm-execgrp-"+(n++));
 					return t;
 				}
 			}) 
@@ -219,6 +219,7 @@ class TCPConnector implements Runnable{
 					//ConcurrentEventExecutor not working consistently
 					/*return new ConcurrentEventExecutor(this, executor, (Integer) args[0],
 							(RejectedExecutionHandler) args[1], eventThreads);*/
+					
 					return new DefaultEventExecutor(this, executor, (Integer) args[0], (RejectedExecutionHandler) args[1]);
 				}
 			};

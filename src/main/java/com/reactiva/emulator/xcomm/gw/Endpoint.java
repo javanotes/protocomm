@@ -6,7 +6,7 @@ public interface Endpoint {
 
 	int getPort();
 	
-	boolean isInitiated();
+	boolean isUnInitiated();
 
 	TunnelOutboundHandler getTunnelOutHandler();
 

@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 /**
@@ -44,7 +45,6 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 	 * @param targets
 	 */
 	public TunnelInboundHandler(List<OutboundEndpoint> targets) {
-		
 		Assert.notNull(targets, "Target destination is null");
 		Assert.notEmpty(targets, "Target destination is empty");
 		this.targets = new ArrayList<>(targets);
@@ -52,10 +52,19 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		
 		balancer = Balancer.getBalancer(Collections.synchronizedList(this.targets), Algorithm.ROUNDROBIN);
 		
+		eventGroups = ThreadLocal.withInitial(new Supplier<EventLoopGroup>() {
+
+			@Override
+			public EventLoopGroup get() {
+				return new NioEventLoopGroup(1);
+			}
+		});
+		
 		log.info("Using balancing strategy: "+balancer.strategy());
 	}
 	final ConcurrentMap<String, OEMetrics> activeSessions = new ConcurrentHashMap<>();
-	final ConcurrentSkipListSet<String> reconnectingHosts = new ConcurrentSkipListSet<>();
+	final ConcurrentMap<String, Object> reconnectingHosts = new ConcurrentHashMap<>();
+	private final Object reconnectingHostsVal = new Object();
 	/**
 	 * 
 	 * @param client
@@ -117,7 +126,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 			{
 				if(!target.isReady())
 				{
-					if (reconnectingHosts.add(target.toString())) {
+					if (beginReconnectionAttempt(target.toString())) {
 						initTunnel(target, 0, null);
 					}
 					else
@@ -130,7 +139,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 					incrConnection(ctx.channel(), target);
 					activeSessions.get(ctx.channel().remoteAddress().toString()).onRequestSent();
 					target.write(ctx, msg);
-					reconnectingHosts.remove(target.toString());
+					endReconnectionAttempt(target.toString());
 					log.debug(ctx.channel().remoteAddress()+" :: REQUEST PREPARED");
 					written = true;
 					break;
@@ -149,7 +158,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable e)
             throws Exception {
     	log.warn("<Trace suppressed> Closing Inbound (source) channel from "+ctx.channel().remoteAddress());
-    	log.debug("", e);
+    	log.warn("", e);
     	Utils.closeOnIOErr(ctx.channel());
     }
     /**
@@ -161,20 +170,22 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
      */
     protected void initTunnel(OutboundEndpoint h, long await, TimeUnit unit) throws InterruptedException
     {
-    	log.info("Negotiating destination "+h);
-    	TunnelOutboundHandler tunnelOutHdlr = new TunnelOutboundHandler();
+    	
+    	final TunnelOutboundHandler tunnelOutHdlr = new TunnelOutboundHandler();
+    	
 		// Start the connection attempt.
 		Bootstrap b = new Bootstrap();
 		b
-		.group(eventLoops)
+		.group(eventGroups.get())
 		.channel(NioSocketChannel.class)
 		.handler(tunnelOutHdlr)
-		.option(ChannelOption.AUTO_READ, true)
+		.option(ChannelOption.AUTO_READ, false)
 		.option(ChannelOption.SO_KEEPALIVE, true)
 		.option(ChannelOption.SO_REUSEADDR, true)
 		;
 		
 		ChannelFuture f = b.connect(h.getHost(), h.getPort());
+		log.info("Negotiating destination "+h);
 		
 		h.associate(f);
 
@@ -185,7 +196,6 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 			;
 		}
 		h.setTunnelOutHandler(tunnelOutHdlr);
-		h.setInitiated(true);
 	}
     private BalancingStrategy<OutboundEndpoint> balancer;
 	@Override
@@ -194,10 +204,11 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		boolean interrupt = false;
 		for(OutboundEndpoint h : targets)
 		{
-			if (!h.isInitiated()) {
+			if (h.isUnInitiated()) {
 				try 
 				{
 					h.setTunnelInHandler(this);
+					log.info("Initiating target "+h);
 					initTunnel(h, 1, TimeUnit.SECONDS);
 				} catch (InterruptedException e) {
 					interrupt = true;
@@ -216,9 +227,16 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		reconnectingHosts.remove(host);
 		
 	}
-	private NioEventLoopGroup eventLoops;
 	
-	public void setEventLoops(NioEventLoopGroup worker) {
-		eventLoops = worker;
+	/**
+	 * 
+	 * @param host
+	 * @return
+	 */
+	boolean beginReconnectionAttempt(String host) {
+		return reconnectingHosts.putIfAbsent(host, reconnectingHostsVal) == null;
+		
 	}
+	private final ThreadLocal<EventLoopGroup> eventGroups;
+	
 }

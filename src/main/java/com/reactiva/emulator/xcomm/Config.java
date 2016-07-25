@@ -27,7 +27,7 @@ public class Config {
 		return port;
 	}
 	int getMaxThread() {
-		return ioThread;
+		return ioThreadCount;
 	}
 	int getProtoLenMax() {
 		return protoLenMax;
@@ -43,11 +43,16 @@ public class Config {
 	@Value("${server.port}")
 	int port;
 	@Value("${server.io-threads: 1}")
-	int ioThread;
+	int ioThreadCount;
 	
 	@Value("${server.exec-threads: 4}")
-	int execThread;
+	int execThreadCount;
+	@Value("${server.monitor.enable: false}")
+	boolean monitor;
 	
+	public boolean isMonitorEnabled() {
+		return monitor;
+	}
 	@Value("${server.proto.len.max: 1000}")
 	int protoLenMax;
 	@Value("${server.proto.len.offset: 0}")
@@ -85,22 +90,26 @@ public class Config {
 	public void init() throws InterruptedException
 	{
 		server().startServer();
-		monitorThread = new Thread(server(), "TCPMon");
-		monitorThread.setDaemon(true);
-		monitorThread.start();
+		if (isMonitorEnabled()) {
+			monitorThread = new Thread(server(), "TCPMon");
+			monitorThread.setDaemon(true);
+			monitorThread.start();
+		}
 	}
 	@PreDestroy
 	public void destroy()
 	{
 		server().stopServer();
 		server().stopMonitor();
-		monitorThread.interrupt();
+		if (monitorThread != null) {
+			monitorThread.interrupt();
+		}
 	}
 	@Bean
 	@DependsOn({"decoder", "processor", "encoder", "targets"})
 	public TCPConnector server()
 	{
-		TCPConnector s = new TCPConnector(port, ioThread, execThread, proxyMode);
+		TCPConnector s = new TCPConnector(port, ioThreadCount, execThreadCount, proxyMode);
 		s.setConfig(this);
 		//in server mode, initialize request handlers.
 		if (!proxyMode) {
@@ -116,6 +125,13 @@ public class Config {
 		
 		return s;
 	}
+	
+	/* -------------------------------- */
+	/*
+	 * These are the extension points for the server implementation.
+	 * Create new classes extending the base classes, and override the 
+	 * protected methods.
+	 */
 	@Bean
 	RequestConvertorHandlerFactory decoder()
 	{
@@ -131,6 +147,8 @@ public class Config {
 	{
 		return new ResponseConvertorHandler();
 	}
+	/* -------------------------------- */
+	
 	@Bean
 	TerminalHandler terminal()
 	{

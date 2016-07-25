@@ -9,10 +9,14 @@ import java.util.concurrent.TimeUnit;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.RejectedExecutionHandler;
 import io.netty.util.concurrent.SingleThreadEventExecutor;
-
+/**
+ * @deprecated Netty data structures are not synchronized.
+ * @author esutdal
+ *
+ */
 class ConcurrentEventExecutor extends SingleThreadEventExecutor {
 
-	private ExecutorService fj;
+	private ExecutorService executors;
 	
 	/**
 	 * 
@@ -25,7 +29,7 @@ class ConcurrentEventExecutor extends SingleThreadEventExecutor {
 	ConcurrentEventExecutor(EventExecutorGroup parent, Executor executor, int maxPendingTasks,
             RejectedExecutionHandler rejectedExecutionHandler, int execThreads) {
 		super(parent, executor, true, maxPendingTasks, rejectedExecutionHandler);
-		fj = Executors.newFixedThreadPool(execThreads, new ThreadFactory() {
+		executors = Executors.newFixedThreadPool(execThreads, new ThreadFactory() {
 			int n = 0;
 			@Override
 			public Thread newThread(Runnable arg0) {
@@ -38,9 +42,9 @@ class ConcurrentEventExecutor extends SingleThreadEventExecutor {
 			
 			@Override
 			public void run() {
-				fj.shutdown();
+				executors.shutdown();
 				try {
-					fj.awaitTermination(10, TimeUnit.SECONDS);
+					executors.awaitTermination(10, TimeUnit.SECONDS);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
@@ -65,7 +69,7 @@ class ConcurrentEventExecutor extends SingleThreadEventExecutor {
 		{
             final Runnable task = takeTask();
             if (task != null) {
-            	fj.submit(new Runnable() {
+            	executors.submit(new Runnable() {
 					
 					@Override
 					public void run() {

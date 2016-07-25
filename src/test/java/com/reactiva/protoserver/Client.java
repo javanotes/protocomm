@@ -9,12 +9,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Client {
 
 	static void sendRequest(String msg) throws UnknownHostException, IOException
 	{
-		Socket s = new Socket("localhost", port);
+		Socket s = new Socket("localhost", PORT);
 		try {
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
 			DataInputStream in = new DataInputStream(s.getInputStream());
@@ -28,51 +30,132 @@ public class Client {
 		}
 	}
 	
-	static void sendRequests(String msg) throws UnknownHostException, IOException
+	static void sendRequests(final String msg) throws UnknownHostException, IOException
 	{
-		Socket s = new Socket("localhost", port);
+		Socket s = new Socket("localhost", PORT);
 		try {
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
 			DataInputStream in = new DataInputStream(s.getInputStream());
-			for (int i = 0; i < cycle; i++) {
+			for (int i = 0; i < CYCLE; i++) {
 				
-				byte[] req = (msg + "Request# "+i).getBytes(StandardCharsets.UTF_8);
+				byte[] req = (msg/* + "Request# "+i*/).getBytes(StandardCharsets.UTF_8);
 				out.writeInt(req.length + 4);
 				out.write(req);
 				out.flush();
-				System.out.println("Client => " + msg + "\t" + in.readUTF());
+				in.readUTF();
 			}
 		} finally {
 			s.close();
 		}
 	}
+	static final String SHORT_MSG = "HELLO SOMOS ";
+	static final String MEDIUM_MSG = "This is a medium text. Contains numb3r5 and, % character$. ";
+	static final String LONG_MSG = "SAC    7326995108BRSAC*****    																			"
+			+ "CSAC     0000UUUUYU480YYBUVUYUUUUUBBBYBBBDBYUUUUUYU001WILLIAM.MCCLEW@ERICSSON.COM  "
+			+ "                                                          BYY UY UBBBBBBBBBUBBBBUUUUBBBYUBRSAUUBBBBBBBBVBBBYBBBBUYUUUUU"
+			+"..ZM3TN06A         SWITCH  DW           ....                                                              ..                                                                                ..                 ..      ..BRSACWGM1465304324810       1465319626334      ......                    "
+			+ "GRSP-NSR:,2016-06-07,13-10-15-CST:::COMPLD,00::ID=BRSACWGM,RO=BRSAC:CNT=02:NUM=\"8888347500        \":NUM=\"8888347501  ";
 	
-	static int iter = 10, port = 8081, concurrency = 4, cycle = 100;
-	public static void main(String[] args) throws UnknownHostException, IOException {
-		ExecutorService ex = Executors.newFixedThreadPool(2);
-		for (int i = 0; i < concurrency; i++) {
+	
+	private static void runPerf(final String msg)
+	{
+
+		final AtomicLong sessStats = new AtomicLong();
+		
+		ExecutorService ex = Executors.newCachedThreadPool();
+		System.out.println("Message bytes len => "+msg.getBytes(StandardCharsets.UTF_8).length);
+		System.out.println("Client.main() #### START");
+		long start = System.currentTimeMillis();
+		for (int i = 0; i < CONCURRENCY; i++) {
 			ex.submit(new Runnable() {
 
 				@Override
 				public void run() {
-					for (int i = 0; i < iter; i++) {
-						try {
+					
+					for (int i = 0; i < ITERATION; i++) {
+						try 
+						{
 							//sendRequest("HELLO SOMOS " + i);
-							sendRequests("HELLO SOMOS " + i);
+							long start = System.currentTimeMillis();
+							sendRequests(msg);
+							long end = System.currentTimeMillis();
+							sessStats.addAndGet(end-start);
+							
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
 					}
-
+					
 				}
 			});
 		}
 		ex.shutdown();
 		try {
-			ex.awaitTermination(10, TimeUnit.SECONDS);
+			ex.awaitTermination(180, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			
 		}
+		long stop = System.currentTimeMillis();
+		System.out.println("Total Time:: "+timeString(stop-start));
+		System.out.println("Request per session:: "+(CYCLE));
+		System.out.println("Total sessions:: "+(CONCURRENCY*ITERATION));
+		System.out.println("Avg Time per session:: "+timeString(sessStats.get()/(CONCURRENCY*ITERATION)));
+		System.out.println("Total Requests completed:: "+(ITERATION*CONCURRENCY*CYCLE));
+		System.out.println("Avg Time per request:: "+timeString(sessStats.get()/(CONCURRENCY*ITERATION*CYCLE)));
+	
+	}
+	
+	static int ITERATION = 10, PORT = 8081, CONCURRENCY = 100, CYCLE = 100;
+	
+	public static void main(String[] args) throws UnknownHostException, IOException {
+		//simpleTest();
+		//simpleConcurrentTest();
+		runPerf(LONG_MSG);
+	}
+	private static void simpleTest()
+	{
+		for(int i=0; i<ITERATION; i++)
+		{
+			try {
+				sendRequest(SHORT_MSG + i);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	private static void simpleConcurrentTest()
+	{
+		ExecutorService ex = Executors.newCachedThreadPool();
+		for(int i=0; i<ITERATION; i++)
+		{
+			ex.submit(new Runnable() {
+				
+				@Override
+				public void run() {
+					try {
+						sendRequest(SHORT_MSG);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			});
+			
+		}
+		ex.shutdown();
+		try {
+			ex.awaitTermination(1, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			
+		}
+	}
+	static String timeString(long t)
+	{
+		long min = TimeUnit.MILLISECONDS.toMinutes(t);
+		t = t - TimeUnit.MINUTES.toMillis(min);
+		long secs = TimeUnit.MILLISECONDS.toSeconds(t);
+		t = t - TimeUnit.SECONDS.toMillis(secs);
+		
+		return (min+" mins "+secs+" secs "+t+" ms");
 	}
 
 }

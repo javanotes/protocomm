@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.math.BigDecimal;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -43,7 +44,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     private final int port;
     
 
-    private boolean initiated = false;
+    private AtomicBoolean initiated = new AtomicBoolean(false);
 	private TimeUnit retryConnectionUnit = TimeUnit.SECONDS;
 
 	public TimeUnit getRetryConnectionUnit() {
@@ -121,19 +122,23 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 		@Override
 		public void operationComplete(ChannelFuture future) {
 			getTunnelInHandler().endReconnectionAttempt(OutboundEndpoint.this.toString());
+			log.debug("ChannelReadyListener operationComplete ## "+future.channel().remoteAddress());
 			if (future.isSuccess()) {
 				synchronized (channelState) {
 					channelState.compareAndSet(OPEN, READY);
 					channelState.notifyAll();
+					future.channel().read();
 					log.info("Successfully created tunnel to {} on LoadBalancer with id '{}'.",
 							outboundChannel.remoteAddress(), OutboundEndpoint.this.hashCode());
 					
 				}
 			} else {
+				log.warn("Failed to create tunnel to {} on LoadBalancer with id '{}'.",OutboundEndpoint.this.toString(), OutboundEndpoint.this.hashCode());
+				log.debug("#Trace#",future.cause());
 				synchronized (channelState) {
 					channelState.compareAndSet(OPEN, OPEN);
 					channelState.notifyAll();
-					log.warn("Failed to create tunnel to {} on LoadBalancer with id '{}'.",OutboundEndpoint.this.toString(), OutboundEndpoint.this.hashCode());
+					
 				}
 			}
 		}
@@ -208,7 +213,6 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     	close0();
     	f.addListener(new ChannelReadyListener());
     	outboundChannel = f.channel();
-    	    	
     }
     /**
      * 
@@ -272,8 +276,8 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 					log.debug("writeoperationComplete::inEventLoop ? "+pooled.channel.eventLoop().inEventLoop());
 					pooledChannels.release(pooled.channel);
 				}
-				//don't request read here
 				getTunnelOutHandler().setClientChannel(clientCtx.channel());
+				clientCtx.read();
 			}
 		});
     }
@@ -307,7 +311,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 	{
 		if (outboundChannel != null) {
 			synchronized (channelState) {
-				outboundChannel.close().syncUninterruptibly();
+				outboundChannel.close()/*.syncUninterruptibly()*/;
 				outboundChannel = null;
 				channelState.compareAndSet(CLOSING, CLOSED);
 				channelState.notifyAll();
@@ -340,12 +344,8 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 		this.tunnelOutHandler = tunnelOutHandler;
 	}
 
-	public boolean isInitiated() {
-		return initiated;
-	}
-
-	public void setInitiated(boolean initiated) {
-		this.initiated = initiated;
+	public boolean isUnInitiated() {
+		return initiated.compareAndSet(false, true);
 	}
 	
 	private final AtomicInteger activeConnections = new AtomicInteger();
