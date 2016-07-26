@@ -17,10 +17,15 @@ public class Utils {
 	private Utils(){}
 	public static final int NO_HOST_REACHABLE = 400;
 	public static final int CONNECTION_RESET = 401;
-	public static void closeOnFlush(Channel ch, ByteBuf buf) {
+	/**
+	 * 
+	 * @param ch
+	 * @param reason
+	 */
+	public static void closeOnFlush(Channel ch, ByteBuf reason) {
         if (ch.isActive()) {
-            ch.writeAndFlush(buf == null ? Unpooled.EMPTY_BUFFER: buf).syncUninterruptibly();
-            ch.close();
+            ch.writeAndFlush(reason == null ? Unpooled.EMPTY_BUFFER: reason);
+            ch.close().syncUninterruptibly();
         }
     }
 	public static void closeOnNoHost(Channel ch) {

@@ -122,6 +122,13 @@ public class Config {
 			s.processor = processor();
 			s.terminal = terminal();
 		}
+		else
+		{
+			//proxy mode
+			System.err.println("++++++++++++++++++++++++++++++++++++++++++++++++++");
+			System.err.println("|  ** WARN: Proxy implementation is unstable **  |");
+			System.err.println("++++++++++++++++++++++++++++++++++++++++++++++++++");
+		}
 		
 		return s;
 	}

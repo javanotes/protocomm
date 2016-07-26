@@ -50,17 +50,21 @@ class TunnelOutboundHandler extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable e)
             throws Exception {
         log.warn("<Trace suppressed> Closing Outbound (target) channel to "+ctx.channel().remoteAddress());
-        log.debug("", e);
+        log.debug("#Trace#", e);
         Utils.closeOnIOErr(ctx.channel());
     }
-	private Channel getClientChannel() {
+	/**
+	 * 
+	 * @return
+	 */
+	private synchronized Channel getClientChannel() {
 		return clientChannel;
 	}
 	/**
 	 * Set and request read
 	 * @param clientChannel
 	 */
-	public void setClientChannel(Channel clientChannel) {
+	public synchronized void setClientChannel(Channel clientChannel) {
 		this.clientChannel = clientChannel;
 	}
 }

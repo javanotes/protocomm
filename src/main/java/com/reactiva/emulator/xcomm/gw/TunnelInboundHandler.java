@@ -1,12 +1,11 @@
 package com.reactiva.emulator.xcomm.gw;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +22,13 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import io.netty.util.concurrent.EventExecutorGroup;
 /**
  * The handler class to use the server as a proxy gateway.
  * @author esutdal
@@ -38,27 +39,26 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(TunnelInboundHandler.class);
 	
-	private final List<OutboundEndpoint> targets;
+	private final OutboundEndpoints endpoints;
 	private final int size;
+	
+	
 	/**
 	 * 
 	 * @param targets
+	 * @param eventGroup 
 	 */
-	public TunnelInboundHandler(List<OutboundEndpoint> targets) {
+	public TunnelInboundHandler(List<OutboundEndpoint> targets, EventLoopGroup eventGroup) {
 		Assert.notNull(targets, "Target destination is null");
 		Assert.notEmpty(targets, "Target destination is empty");
-		this.targets = new ArrayList<>(targets);
-		size = this.targets.size();
 		
-		balancer = Balancer.getBalancer(Collections.synchronizedList(this.targets), Algorithm.ROUNDROBIN);
+		endpoints = new OutboundEndpoints(targets, Algorithm.ROUNDROBIN);
+		size = endpoints.size();
 		
-		eventGroups = ThreadLocal.withInitial(new Supplier<EventLoopGroup>() {
-
-			@Override
-			public EventLoopGroup get() {
-				return new NioEventLoopGroup(1);
-			}
-		});
+		//TODO: need to change balancing algorithm based on thread local
+		balancer = Balancer.getBalancer(Collections.synchronizedList(targets), Algorithm.ROUNDROBIN);
+		
+		this.eventGroups = eventGroup;
 		
 		log.info("Using balancing strategy: "+balancer.strategy());
 	}
@@ -105,6 +105,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
     	log.debug("Remote client "+ctx.channel().remoteAddress() + " was disconnected");
     	decrConnection(ctx.channel());
+    	log.info("Channel inactive "+ctx.channel().remoteAddress()+" SessionID# "+sessions.remove(ctx.channel().remoteAddress().toString()));
     }
     
     @Override
@@ -114,20 +115,51 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		}
 		super.write(ctx, msg, promise);
         log.debug(ctx.channel().remoteAddress()+" :: RESPONSE PREPARED");
+        log.info("Channel write "+ctx.channel().remoteAddress()+" SessionID# "+sessions.get(ctx.channel().remoteAddress().toString()));
     }
     
+    private OutboundEndpoint getNext()
+    {
+    	OutboundEndpoint target = balancer.getNext();
+    	return endpoints.get(target);
+    }
+    
+    private void onTargetReady(ChannelHandlerContext ctx, Object msg, OutboundEndpoint target)
+    {
+    	incrConnection(ctx.channel(), target);
+		activeSessions.get(ctx.channel().remoteAddress().toString()).onRequestSent();
+		target.write(ctx, msg);
+		endReconnectionAttempt(target.toString());
+		log.debug(ctx.channel().remoteAddress()+" :: REQUEST PREPARED");
+		log.info("Channel read "+ctx.channel().remoteAddress()+" SessionID# "+sessions.get(ctx.channel().remoteAddress().toString()));
+    }
 	@Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
 		int c = 0;
 		boolean written = false;
 		while (c++ < size) {
-			OutboundEndpoint target = balancer.getNext();
+			OutboundEndpoint target = getNext();
 			try 
 			{
 				if(!target.isReady())
 				{
 					if (beginReconnectionAttempt(target.toString())) {
-						initTunnel(target, 0, null);
+						if (target.isUnInitiated()) 
+						{
+							log.info(">> Initiating tunnel to "+target.toString()+". This can take some time");
+							target.setTunnelInHandler(this);
+							initTunnel(target, 30, TimeUnit.SECONDS);
+							if(target.isReady())
+							{
+								onTargetReady(ctx, msg, target);
+								written = true;
+								break;
+							}
+						}
+						else
+						{
+							initTunnel(target, 0, null);
+						}
 					}
 					else
 					{
@@ -136,11 +168,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 				}
 				else
 				{
-					incrConnection(ctx.channel(), target);
-					activeSessions.get(ctx.channel().remoteAddress().toString()).onRequestSent();
-					target.write(ctx, msg);
-					endReconnectionAttempt(target.toString());
-					log.debug(ctx.channel().remoteAddress()+" :: REQUEST PREPARED");
+					onTargetReady(ctx, msg, target);
 					written = true;
 					break;
 				}
@@ -158,7 +186,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable e)
             throws Exception {
     	log.warn("<Trace suppressed> Closing Inbound (source) channel from "+ctx.channel().remoteAddress());
-    	log.warn("", e);
+    	log.warn("#Trace#", e);
     	Utils.closeOnIOErr(ctx.channel());
     }
     /**
@@ -176,9 +204,16 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		// Start the connection attempt.
 		Bootstrap b = new Bootstrap();
 		b
-		.group(eventGroups.get())
+		.group(eventGroups)
 		.channel(NioSocketChannel.class)
-		.handler(tunnelOutHdlr)
+		.handler(new ChannelInitializer<Channel>() {
+
+			@Override
+			protected void initChannel(Channel ch) throws Exception {
+				ch.pipeline().addLast(executors, tunnelOutHdlr);
+				
+			}
+		})
 		.option(ChannelOption.AUTO_READ, false)
 		.option(ChannelOption.SO_KEEPALIVE, true)
 		.option(ChannelOption.SO_REUSEADDR, true)
@@ -198,24 +233,16 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		h.setTunnelOutHandler(tunnelOutHdlr);
 	}
     private BalancingStrategy<OutboundEndpoint> balancer;
+    private ConcurrentMap<String, UUID> sessions = new ConcurrentHashMap<>();
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) {
 		
 		boolean interrupt = false;
-		for(OutboundEndpoint h : targets)
-		{
-			if (h.isUnInitiated()) {
-				try 
-				{
-					h.setTunnelInHandler(this);
-					log.info("Initiating target "+h);
-					initTunnel(h, 1, TimeUnit.SECONDS);
-				} catch (InterruptedException e) {
-					interrupt = true;
-				} 
-			}
-		}
-				
+		sessions.putIfAbsent(ctx.channel().remoteAddress().toString(), UUID.randomUUID());
+		log.info("Channel active "+ctx.channel().remoteAddress()+" SessionID# "+sessions.get(ctx.channel().remoteAddress().toString()));
+		
+		ctx.read();
+						
 		if(interrupt)
 			Thread.currentThread().interrupt();
 	}
@@ -237,6 +264,10 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		return reconnectingHosts.putIfAbsent(host, reconnectingHostsVal) == null;
 		
 	}
-	private final ThreadLocal<EventLoopGroup> eventGroups;
+	private final EventLoopGroup eventGroups;
+	private EventExecutorGroup executors;
+	public void setExecutorGroup(DefaultEventExecutorGroup executor) {
+		this.executors = executor;
+	}
 	
 }

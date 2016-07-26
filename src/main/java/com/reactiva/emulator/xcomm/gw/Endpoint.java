@@ -7,9 +7,10 @@ public interface Endpoint {
 	int getPort();
 	
 	boolean isUnInitiated();
-
-	TunnelOutboundHandler getTunnelOutHandler();
-
+	/**
+	 * This is  synchronized access.
+	 * @param tunnelOutHandler
+	 */
 	void setTunnelOutHandler(TunnelOutboundHandler tunnelOutHandler);
 
 }

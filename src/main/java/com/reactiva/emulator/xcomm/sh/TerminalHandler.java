@@ -26,7 +26,7 @@ public class TerminalHandler extends ChannelInboundHandlerAdapter {
 				@Override
 				public void operationComplete(ChannelFuture future) throws Exception {
 					if(future.isSuccess())
-						log.debug("End processing");
+						log.info("End processing "+future.channel().remoteAddress());
 					
 					if(closeOnFlush)
 		        	{

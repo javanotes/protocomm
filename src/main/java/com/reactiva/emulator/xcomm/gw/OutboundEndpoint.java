@@ -2,13 +2,14 @@ package com.reactiva.emulator.xcomm.gw;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
-import java.util.concurrent.SynchronousQueue;
+import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 import com.reactiva.emulator.xcomm.gw.bal.Target;
 
@@ -18,8 +19,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.channel.pool.FixedChannelPool;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 /**
  * 
  * @author esutdal
@@ -37,6 +36,48 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 
 	 */
 	
+	/**
+	 * 
+	 * @param addr
+	 * @return
+	 */
+	boolean tryLock()
+	{
+		return isLocked.compareAndSet(false, true);
+	}
+	/**
+	 * 
+	 * @param addr
+	 * @param timeout
+	 * @param unit
+	 * @return
+	 * @throws InterruptedException
+	 */
+	boolean lock(long timeout, TimeUnit unit) throws InterruptedException
+	{
+		if (isLocked.compareAndSet(false, true)) {
+			synchronized (isLocked) {
+				isLocked.wait(unit.toMillis(timeout));
+			}
+		}
+		
+		return tryLock();
+	}
+	
+	/**
+	 * 
+	 * @param addr
+	 */
+	void unlock()
+	{
+		if (isLocked.compareAndSet(true, false)) {
+			synchronized (isLocked) {
+				isLocked.notifyAll();
+			}
+		}
+	}
+	
+	private final AtomicBoolean isLocked = new AtomicBoolean();
 	static final Logger log = LoggerFactory.getLogger(OutboundEndpoint.class);
 	// constants ------------------------------------------------------------------------------------------------------
 
@@ -90,7 +131,16 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 			return false;
 		return true;
 	}
-
+	/**
+	 * 
+	 * @return
+	 */
+	public OutboundEndpoint copyConfig()
+	{
+		OutboundEndpoint oe = new OutboundEndpoint(getHost(), getPort());
+		oe.setWeight(weight);
+		return oe;
+	}
     /**
      * 
      * @param host
@@ -109,8 +159,9 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     private static final int CLOSED = 3;
     private static final int OPEN = 0;
     private static final int CLOSING = 2;
-    private TunnelOutboundHandler tunnelOutHandler;
+    private volatile TunnelOutboundHandler tunnelOutHandler;
     private TunnelInboundHandler tunnelInHandler;
+    
     /**
      * 
      * @author esutdal
@@ -118,16 +169,20 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
      */
     private class ChannelReadyListener implements ChannelFutureListener
     {
+    	
+		public ChannelReadyListener() {
+		}
 
 		@Override
 		public void operationComplete(ChannelFuture future) {
 			getTunnelInHandler().endReconnectionAttempt(OutboundEndpoint.this.toString());
-			log.debug("ChannelReadyListener operationComplete ## "+future.channel().remoteAddress());
 			if (future.isSuccess()) {
 				synchronized (channelState) {
 					channelState.compareAndSet(OPEN, READY);
 					channelState.notifyAll();
-					future.channel().read();
+					/*if (read) {
+						future.channel().read();
+					}*/
 					log.info("Successfully created tunnel to {} on LoadBalancer with id '{}'.",
 							outboundChannel.remoteAddress(), OutboundEndpoint.this.hashCode());
 					
@@ -149,59 +204,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     
     private final AtomicInteger channelState = new AtomicInteger(OPEN);
 	
-	private final SynchronousQueue<Channel> pooledChannelSyncQ = new SynchronousQueue<>();
-	/**
-	 * @deprecated Does not work as intended due to the single threaded model of
-	 * Netty. A channel and its related task IO or event, is always pinned to the same
-	 * thread.<p>
-	 * @return
-	 * 
-	 */
-	private Channel acquirePooledChannel()
-	{
-		if(pooledChannels != null)
-		{
-			pooledChannels.acquire().addListener(new FutureListener<Channel>() {
-
-				@Override
-				public void operationComplete(Future<Channel> future) throws Exception  {
-					if(future.isSuccess())
-					{
-						Channel c = future.getNow();
-						boolean offered = false;
-						try 
-						{
-							offered = pooledChannelSyncQ.offer(c, 1, TimeUnit.SECONDS);
-						} 
-						catch (InterruptedException e) {
-							Thread.currentThread().interrupt();
-						}
-						finally
-						{
-							if(!offered)
-								pooledChannels.release(c);
-						}
-					}
-					else
-					{
-						log.warn("Failed to create pooled connection. Future cancelled?"+future.isCancelled()+" done?"+future.isDone(), future.cause());
-						
-					}
-
-				}
-			});
-			try {
-				Channel ch = pooledChannelSyncQ.poll(10, TimeUnit.MILLISECONDS);
-				if (ch != null) {
-					log.info("acquirePooledChannel::inEventLoop ? " + ch.eventLoop().inEventLoop());
-				}
-				return ch;
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		return null;
-	}
+	
 	/**
      * Associate a channel to this instance.
      * @param f
@@ -256,6 +259,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     	Channel ch = null;//acquirePooledChannel();
     	return ch == null ? new PooledOrUnpooled(outboundChannel, false) : new PooledOrUnpooled(ch, true);
     }
+    private final Object outHandlerMutex = new Object();
     /**
      * Write to this endpoint.
      * @param clientCtx
@@ -276,8 +280,10 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 					log.debug("writeoperationComplete::inEventLoop ? "+pooled.channel.eventLoop().inEventLoop());
 					pooledChannels.release(pooled.channel);
 				}
-				getTunnelOutHandler().setClientChannel(clientCtx.channel());
-				clientCtx.read();
+				synchronized (outHandlerMutex) {
+					tunnelOutHandler.setClientChannel(clientCtx.channel());
+					clientCtx.read();
+				}
 			}
 		});
     }
@@ -329,19 +335,13 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 	}
 
 	/* (non-Javadoc)
-	 * @see com.reactiva.emulator.netty.gw.Endpoint#getTunnelOutHandler()
-	 */
-	@Override
-	public TunnelOutboundHandler getTunnelOutHandler() {
-		return tunnelOutHandler;
-	}
-
-	/* (non-Javadoc)
 	 * @see com.reactiva.emulator.netty.gw.Endpoint#setTunnelOutHandler(com.reactiva.emulator.netty.gw.TunnelOutboundHandler)
 	 */
 	@Override
 	public void setTunnelOutHandler(TunnelOutboundHandler tunnelOutHandler) {
-		this.tunnelOutHandler = tunnelOutHandler;
+		synchronized (outHandlerMutex) {
+			this.tunnelOutHandler = tunnelOutHandler;
+		}
 	}
 
 	public boolean isUnInitiated() {
@@ -416,7 +416,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 		
 	}
 
-	public TunnelInboundHandler getTunnelInHandler() {
+	TunnelInboundHandler getTunnelInHandler() {
 		return tunnelInHandler;
 	}
 

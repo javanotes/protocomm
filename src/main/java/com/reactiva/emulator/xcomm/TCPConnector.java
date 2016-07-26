@@ -64,18 +64,23 @@ class TCPConnector implements Runnable{
 	 */
 	protected void proxyHandlers(SocketChannel ch) throws Exception
 	{
-		ch.pipeline().addLast(balancer);
-		log.warn("*************************");
-		log.warn("        !UNSTABLE!         ");
-		log.warn("*************************");
+		if (tunnelHandler == null) {
+			synchronized (TCPConnector.class) {
+				if (tunnelHandler == null) {
+					tunnelHandler = new TunnelInboundHandler(loadTargets(), eventLoop);
+					tunnelHandler.setExecutorGroup(executor);
+				}
+			}
+		}
+		ch.pipeline().addLast(executor, tunnelHandler);
 	}
 	
 	/**
-	 * 
+	 * Strategy class for loading appropriate handlers.
 	 * @author esutdal
 	 *
 	 */
-	private final class Handlers extends ChannelInitializer<SocketChannel> {
+	private final class HandlerInitializer extends ChannelInitializer<SocketChannel> {
 		@Override
 		protected void initChannel(SocketChannel ch) throws Exception {
 			
@@ -100,7 +105,7 @@ class TCPConnector implements Runnable{
 	
 	private final boolean proxy;
 	private Config config;
-	private TunnelInboundHandler balancer;
+	private TunnelInboundHandler tunnelHandler;
 	/**
 	 * A TCP connector which can act as a server or proxy.
 	 * @param port
@@ -175,12 +180,10 @@ class TCPConnector implements Runnable{
 	public TCPConnector(int port, int workerThreadCount, boolean proxyMode) {
 		this(port, 1, workerThreadCount, proxyMode);
 	}
-	private ServerBootstrap server;
-	private NioEventLoopGroup eventLoop, bossLoop;
 	/**
 	 * 
 	 */
-	private void open()
+	private void initIOThreads()
 	{
 		eventLoop = new NioEventLoopGroup(ioThreads, new ThreadFactory() {
 			int n = 1;
@@ -200,34 +203,46 @@ class TCPConnector implements Runnable{
 				return t;
 			}
 		});
-		if (proxy) {
-			balancer = new TunnelInboundHandler(loadTargets());
-		}
-		
-		if (eventThreads > 0) {
-			executor = new DefaultEventExecutorGroup(eventThreads, new ThreadFactory() {
-				int n = 0;
-				@Override
-				public Thread newThread(Runnable arg0) {
-					Thread t = new Thread(arg0, "xcomm-execgrp-"+(n++));
-					return t;
-				}
-			}) 
-			{
-				@Override
-				protected EventExecutor newChild(Executor executor, Object... args) throws Exception {
-					//ConcurrentEventExecutor not working consistently
-					/*return new ConcurrentEventExecutor(this, executor, (Integer) args[0],
-							(RejectedExecutionHandler) args[1], eventThreads);*/
-					
-					return new DefaultEventExecutor(this, executor, (Integer) args[0], (RejectedExecutionHandler) args[1]);
-				}
-			};
-		}
+	}
+	/**
+	 * 
+	 */
+	private void initExecThreads()
+	{
+		eventThreads = eventThreads <= 0 ? Runtime.getRuntime().availableProcessors() : eventThreads;
+		executor = new DefaultEventExecutorGroup(eventThreads, new ThreadFactory() {
+			int n = 0;
+			@Override
+			public Thread newThread(Runnable arg0) {
+				Thread t = new Thread(arg0, "xcomm-execgrp-"+(n++));
+				return t;
+			}
+		}) 
+		{
+			@Override
+			protected EventExecutor newChild(Executor executor, Object... args) throws Exception {
+				//ConcurrentEventExecutor not working consistently
+				/*return new ConcurrentEventExecutor(this, executor, (Integer) args[0],
+						(RejectedExecutionHandler) args[1], eventThreads);*/
+				
+				return new DefaultEventExecutor(this, executor, (Integer) args[0], (RejectedExecutionHandler) args[1]);
+			}
+		};
+	}
+	private ServerBootstrap server;
+	private NioEventLoopGroup eventLoop, bossLoop;
+	/**
+	 * Setup the transport channel
+	 */
+	private void setup()
+	{
+		initIOThreads();
+		initExecThreads();
+				
 		server = new ServerBootstrap()
 				.group(bossLoop, eventLoop)
 				.channel(NioServerSocketChannel.class)
-				.childHandler(new Handlers())
+				.childHandler(new HandlerInitializer())
 				.option(ChannelOption.SO_BACKLOG, 256)    
 	            ;
 	}
@@ -279,7 +294,7 @@ class TCPConnector implements Runnable{
 	 * 
 	 */
 	public void startServer() throws InterruptedException {
-		open();
+		setup();
 		future = server.bind(port).sync();
 		log.info("Started TCP transport on port "+port + " in "+(proxy ? "PROXY" : "SERVER") + " mode");
 		running = true;

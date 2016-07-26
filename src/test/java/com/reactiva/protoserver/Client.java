@@ -105,12 +105,12 @@ public class Client {
 	
 	}
 	
-	static int ITERATION = 10, PORT = 8081, CONCURRENCY = 100, CYCLE = 100;
+	static int ITERATION = 10, PORT = 8093, CONCURRENCY = 100, CYCLE = 100;
 	
 	public static void main(String[] args) throws UnknownHostException, IOException {
-		//simpleTest();
+		simpleTest();
 		//simpleConcurrentTest();
-		runPerf(LONG_MSG);
+		//runPerf(LONG_MSG);
 	}
 	private static void simpleTest()
 	{
@@ -125,7 +125,7 @@ public class Client {
 	}
 	private static void simpleConcurrentTest()
 	{
-		ExecutorService ex = Executors.newCachedThreadPool();
+		ExecutorService ex = Executors.newFixedThreadPool(2);
 		for(int i=0; i<ITERATION; i++)
 		{
 			ex.submit(new Runnable() {
@@ -134,6 +134,12 @@ public class Client {
 				public void run() {
 					try {
 						sendRequest(SHORT_MSG);
+						try {
+							Thread.sleep(10);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
