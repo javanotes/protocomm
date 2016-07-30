@@ -9,8 +9,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import com.reactiva.emulator.xcomm.handlers.ITOCLogin;
+import com.reactiva.emulator.xcomm.sh.ITOCCodecHandler;
+import com.smsnow.protocol.Codec;
+import com.smsnow.protocol.CodecException;
+import com.smsnow.protocol.ITOCCodec;
 
 public class Client {
 
@@ -25,6 +30,23 @@ public class Client {
 			out.write(req);
 			out.flush();
 			System.out.println("Client => "+msg +"\t" + in.readUTF());
+		} finally {
+			s.close();
+		}
+	}
+	static ITOCCodecHandler codec = new ITOCCodecHandler();
+	static void sendRequestCodec(ITOCLogin msg) throws UnknownHostException, IOException, CodecException
+	{
+		
+		codec.getCodec().put(msg.code(), msg.getClass().getName());
+		Socket s = new Socket("localhost", PORT);
+		try {
+			DataOutputStream out = new DataOutputStream(s.getOutputStream());
+			DataInputStream in = new DataInputStream(s.getInputStream());
+			codec.write(msg, out);
+			out.flush();
+			ITOCLogin resp = (ITOCLogin) codec.read(in);
+			System.out.println("Got response => "+resp );
 		} finally {
 			s.close();
 		}
@@ -105,12 +127,14 @@ public class Client {
 	
 	}
 	
-	static int ITERATION = 10, PORT = 8093, CONCURRENCY = 100, CYCLE = 100;
+	static int ITERATION = 10, PORT = 8081, CONCURRENCY = 100, CYCLE = 100;
 	
-	public static void main(String[] args) throws UnknownHostException, IOException {
-		simpleTest();
+	public static void main(String[] args) throws Exception {
+		//simpleTest();
 		//simpleConcurrentTest();
 		//runPerf(LONG_MSG);
+		
+		sendRequestCodec(new ITOCLogin("12345678", "87654321", "Z", "ADMINDAL"));
 	}
 	private static void simpleTest()
 	{

@@ -12,7 +12,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
 import com.reactiva.emulator.xcomm.sh.BasicChannelHandler;
+import com.reactiva.emulator.xcomm.sh.ITOCCodecHandler;
 import com.reactiva.emulator.xcomm.sh.RequestConvertorHandlerFactory;
+import com.reactiva.emulator.xcomm.sh.RequestDispatcher;
 import com.reactiva.emulator.xcomm.sh.RequestProcessorHandler;
 import com.reactiva.emulator.xcomm.sh.ResponseConvertorHandler;
 import com.reactiva.emulator.xcomm.sh.TerminalHandler;
@@ -66,6 +68,18 @@ public class Config {
 	public HostAndPort targets()
 	{
 		return new HostAndPort();
+	}
+	@Bean
+	@ConfigurationProperties(prefix = "server.codecs")
+	public ITOCCodecHandler codecs()
+	{
+		return new ITOCCodecHandler();
+	}
+	@Bean
+	@ConfigurationProperties(prefix = "server.handlers")
+	public RequestDispatcher handlers()
+	{
+		return new RequestDispatcher();
 	}
 	
 	public static class HostAndPort
@@ -140,19 +154,22 @@ public class Config {
 	 * protected methods.
 	 */
 	@Bean
+	@DependsOn("codecs")
 	RequestConvertorHandlerFactory decoder()
 	{
-		return new RequestConvertorHandlerFactory();
+		return new RequestConvertorHandlerFactory(codecs());
 	}
 	@Bean
+	@DependsOn("handlers")
 	RequestProcessorHandler processor()
 	{
-		return new RequestProcessorHandler();
+		return new RequestProcessorHandler(handlers());
 	}
 	@Bean
+	@DependsOn("codecs")
 	ResponseConvertorHandler encoder()
 	{
-		return new ResponseConvertorHandler();
+		return new ResponseConvertorHandler(codecs());
 	}
 	/* -------------------------------- */
 	

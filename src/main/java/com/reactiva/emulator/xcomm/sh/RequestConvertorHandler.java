@@ -3,10 +3,10 @@ package com.reactiva.emulator.xcomm.sh;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import com.reactiva.emulator.xcomm.dto.Request;
+import com.smsnow.protocol.CodecException;
+import com.smsnow.protocol.IType;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -17,26 +17,21 @@ public class RequestConvertorHandler extends ByteToMessageDecoder {
 	 * Pass all helper class instances, if reqd.
 	 * This class is NOT in singleton scope.
 	 */
-	public RequestConvertorHandler()
+	ITOCCodecHandler codecHdlr;
+	public RequestConvertorHandler(ITOCCodecHandler codecHdlr)
 	{
-		//TODO
+		this.codecHdlr = codecHdlr;
 	}
 	/**
 	 * Override this method to parse the request convert to an object.
 	 * @param request
 	 * @return
 	 * @throws IOException 
+	 * @throws CodecException 
 	 */
-	protected Request transform(DataInputStream request) throws IOException
+	protected IType transform(DataInputStream request) throws IOException, CodecException
 	{
-		//TODO: override
-		int len = request.readInt();
-		byte[] b = new byte[len-4];
-		request.readFully(b);
-		Request r = new Request();
-		r.setPayload(new String(b, StandardCharsets.UTF_8));
-		
-		return r;
+		return codecHdlr.read(request);
 		
 	}
 	@Override

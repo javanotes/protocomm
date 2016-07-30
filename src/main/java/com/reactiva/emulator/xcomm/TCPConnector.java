@@ -302,7 +302,6 @@ class TCPConnector implements Runnable{
 	@Autowired
 	private HostAndPort targets;
 	/**
-	 * @deprecated
 	 * @param bch
 	 */
 	public void addHandler(BasicChannelHandler bch) {

@@ -40,6 +40,7 @@ dependencies {
   }
   //compile('org.springframework.boot:spring-boot-starter-log4j')
   compile('io.netty:netty-all:4.1.2.Final')
+  compile 'org.jboss.forge.roaster:roaster-distribution:2.19.0.Final'
   testCompile("org.springframework.boot:spring-boot-starter-test")
   
 }

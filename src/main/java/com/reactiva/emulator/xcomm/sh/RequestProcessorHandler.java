@@ -5,14 +5,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.reactiva.emulator.xcomm.dto.Request;
-import com.reactiva.emulator.xcomm.dto.Response;
+import com.smsnow.protocol.IType;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 @Sharable
-public class RequestProcessorHandler extends MessageToMessageDecoder<Request> {
+public class RequestProcessorHandler extends MessageToMessageDecoder<IType> {
 
 	private static final Logger log = LoggerFactory.getLogger(RequestProcessorHandler.class);
 	/**
@@ -22,27 +21,34 @@ public class RequestProcessorHandler extends MessageToMessageDecoder<Request> {
 	{
 		
 	}
+	private RequestDispatcher handlers;
+	public RequestProcessorHandler(RequestDispatcher handlers) {
+		this.handlers = handlers;
+	}
 	/**
 	 * Process the request using some service class.
 	 * @param request
 	 * @return
 	 */
-	protected Response doProcess(Request request) throws Exception
+	protected IType doProcess(IType request) throws Exception
 	{
-		
-		//TODO override
-		Response r = new Response();
-		r.setPayload("Got request => "+request.getPayload());
-		if (log.isDebugEnabled()) {
-			log.debug("## Setting response [" + r.getPayload() + "]");
+		try {
+			return handlers.service(request);
+		} catch (Exception e) {
+			log.error("-- Handler exception --", e);
 		}
-		return r;
-		
+		return new IType() {
+			
+			@Override
+			public short code() {
+				return -1;
+			}
+		};
 	}
 	
 	@Override
-	protected void decode(ChannelHandlerContext ctx, Request msg, List<Object> out) throws Exception {
-		Response r = doProcess(msg);
+	protected void decode(ChannelHandlerContext ctx, IType msg, List<Object> out) throws Exception {
+		IType r = doProcess(msg);
 		out.add(r);
 		
 	}
