@@ -4,7 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.nio.ByteBuffer;
 
-public interface DynamicCodec extends Codec {
+public interface DynamicFixedLenCodec extends FixedLenCodec {
 
 	/**
 	 * Write a protocol instance to out stream dynamically.

@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 public class Config {
 
 	@Bean
-	public DynamicCodec codec()
+	public DynamicFixedLenCodec codec()
 	{
 		return new ITOCCodec();
 	}

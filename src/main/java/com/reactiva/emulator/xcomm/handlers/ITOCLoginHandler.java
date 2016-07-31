@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.reactiva.emulator.xcomm.sh.RequestHandler;
-import com.smsnow.protocol.FixedLengthType;
 
 public class ITOCLoginHandler implements RequestHandler {
 
@@ -20,7 +19,7 @@ public class ITOCLoginHandler implements RequestHandler {
 	}
 
 	@Override
-	public FixedLengthType service(FixedLengthType request) throws Exception {
+	public ITOCLogin service(ITOCLogin request) throws Exception {
 		ITOCLogin req = (ITOCLogin) request;
 		log.info("Got request:: "+req);
 		req.setAction("B");

@@ -20,7 +20,7 @@ import com.smsnow.protocol.CodecException.Type;
  * @author esutdal
  *
  */
-public class ITOCCodec extends AbstractCodec implements DynamicCodec {
+public class ITOCCodec extends AbstractCodec implements DynamicFixedLenCodec {
 	
 	private void writeAsNumeric(FormatMeta f, Object o, DataOutputStream out) throws IOException
 	{
@@ -127,8 +127,9 @@ public class ITOCCodec extends AbstractCodec implements DynamicCodec {
 			throw e2;
 		}
 		try {
-			in.readInt();
-		} catch (IOException e2) {
+			int len = in.readInt();
+			Assert.isTrue(meta.getSize() == len, "Expecting stream length: "+meta.getSize()+" found: "+len);
+		} catch (Exception e2) {
 			throw new CodecException(e2, Type.IO_ERR);
 		}
 		for(Entry<Integer, FormatMeta> e : meta.getFormats().entrySet())
@@ -211,7 +212,7 @@ public class ITOCCodec extends AbstractCodec implements DynamicCodec {
 			throw new CodecException(e2, Type.META_ERR);
 		}
 		try {
-			out.writeInt(((FixedLengthType)protoClass).length());
+			out.writeInt(metaData.getSize());
 		} catch (IOException e2) {
 			throw new CodecException(e2, Type.IO_ERR);
 		}

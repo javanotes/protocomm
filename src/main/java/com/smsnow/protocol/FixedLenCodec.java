@@ -4,7 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.nio.ByteBuffer;
 
-public interface Codec {
+public interface FixedLenCodec {
 
 	/**
 	 * Write a protocol instance to out stream.

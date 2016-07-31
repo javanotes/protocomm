@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.reactiva.emulator.xcomm.handlers.ITOCLogin;
 import com.reactiva.emulator.xcomm.sh.ITOCCodecHandler;
-import com.smsnow.protocol.Codec;
+import com.smsnow.protocol.FixedLenCodec;
 import com.smsnow.protocol.CodecException;
 import com.smsnow.protocol.ITOCCodec;
 
