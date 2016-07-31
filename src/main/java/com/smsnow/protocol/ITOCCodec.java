@@ -126,7 +126,11 @@ public class ITOCCodec extends AbstractCodec implements DynamicCodec {
 		} catch (InstantiationException | IllegalAccessException e2) {
 			throw e2;
 		}
-		
+		try {
+			in.readInt();
+		} catch (IOException e2) {
+			throw new CodecException(e2, Type.IO_ERR);
+		}
 		for(Entry<Integer, FormatMeta> e : meta.getFormats().entrySet())
 		{
 			int off = e.getKey();
@@ -205,6 +209,11 @@ public class ITOCCodec extends AbstractCodec implements DynamicCodec {
 			validate(metaData, protoClass.getClass());
 		} catch (Exception e2) {
 			throw new CodecException(e2, Type.META_ERR);
+		}
+		try {
+			out.writeInt(((FixedLengthType)protoClass).length());
+		} catch (IOException e2) {
+			throw new CodecException(e2, Type.IO_ERR);
 		}
 		for(Entry<Integer, FormatMeta> e : metaData.getFormats().entrySet())
 		{

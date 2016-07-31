@@ -10,7 +10,7 @@ import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.smsnow.protocol.IType;
+import com.smsnow.protocol.FixedLengthType;
 
 public class RequestDispatcher implements RequestHandler {
 
@@ -19,18 +19,18 @@ public class RequestDispatcher implements RequestHandler {
 	private Map<Short, RequestHandler> allHandlers = new HashMap<>();
 	private Map<Short, String> handlers = new HashMap<>();
 	@Override
-	public IType service(IType request) throws Exception {
-		if(!allHandlers.containsKey(request.code()))
+	public FixedLengthType service(FixedLengthType request) throws Exception {
+		if(!allHandlers.containsKey(request.length()))
 		{
-			if(handlers.containsKey(request.code()))
+			if(handlers.containsKey(request.length()))
 			{
 				synchronized (allHandlers) {
-					if(!allHandlers.containsKey(request.code()))
+					if(!allHandlers.containsKey(request.length()))
 					{
 						try {
-							RequestHandler rh = (RequestHandler) Class.forName(handlers.get(request.code())).newInstance();
+							RequestHandler rh = (RequestHandler) Class.forName(handlers.get(request.length())).newInstance();
 							rh.init();
-							allHandlers.put(request.code(), rh);
+							allHandlers.put(request.length(), rh);
 						} catch (Exception e) {
 							throw e;
 						}
@@ -39,11 +39,11 @@ public class RequestDispatcher implements RequestHandler {
 			}
 			else
 			{
-				throw new IllegalArgumentException("No request handler defined for message type- "+request.code());
+				throw new IllegalArgumentException("No request handler defined for message type- "+request.length());
 			}
 			
 		}
-		return allHandlers.get(request.code()).service(request);
+		return allHandlers.get(request.length()).service(request);
 	}
 	@PostConstruct
 	@Override

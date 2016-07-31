@@ -38,7 +38,7 @@ public class Client {
 	static void sendRequestCodec(ITOCLogin msg) throws UnknownHostException, IOException, CodecException
 	{
 		
-		codec.getCodec().put(msg.code(), msg.getClass().getName());
+		codec.getCodec().put(msg.length(), msg.getClass().getName());
 		Socket s = new Socket("localhost", PORT);
 		try {
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());

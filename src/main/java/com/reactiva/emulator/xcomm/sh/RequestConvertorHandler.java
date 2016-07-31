@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.smsnow.protocol.CodecException;
-import com.smsnow.protocol.IType;
+import com.smsnow.protocol.FixedLengthType;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -29,7 +29,7 @@ public class RequestConvertorHandler extends ByteToMessageDecoder {
 	 * @throws IOException 
 	 * @throws CodecException 
 	 */
-	protected IType transform(DataInputStream request) throws IOException, CodecException
+	protected FixedLengthType transform(DataInputStream request) throws IOException, CodecException
 	{
 		return codecHdlr.read(request);
 		

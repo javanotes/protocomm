@@ -1,10 +1,10 @@
 package com.reactiva.emulator.xcomm.sh;
 
-import com.smsnow.protocol.IType;
+import com.smsnow.protocol.FixedLengthType;
 
 public interface RequestHandler {
 
 	void init();
-	IType service(IType request) throws Exception;
+	FixedLengthType service(FixedLengthType request) throws Exception;
 	void destroy();
 }

@@ -10,9 +10,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.jboss.forge.roaster.Roaster;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
@@ -20,12 +23,33 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.smsnow.protocol.Attribute;
+import com.smsnow.protocol.FixedLengthType;
 import com.smsnow.protocol.Format;
-import com.smsnow.protocol.IType;
 import com.smsnow.protocol.Protocol;
 
 public class Generator {
 
+	private static int sizeof(JMeta meta) {
+		int off = 0, len = 0, size = 0;
+		Set<JFormat> formats = new TreeSet<>(new Comparator<JFormat>() {
+
+			@Override
+			public int compare(JFormat o1, JFormat o2) {
+				return Integer.compare(o1.offset, o2.offset);
+			}
+		});
+		formats.addAll(meta.fields.values());
+		for(JFormat fm : formats)
+		{
+			Assert.isTrue(fm.offset == (off + len), meta.name+" => Incorrect length at offset:"+off);
+			off = fm.offset;
+			len = fm.length;
+			size += len;
+						
+		}
+		
+		return size;
+	}
 	private static String generateSourceCode(JMeta meta)
 	{
 		Assert.notNull(meta.className, "Class name not specified");
@@ -37,12 +61,12 @@ public class Generator {
 
 		javaClass.addAnnotation(Protocol.class).setStringValue("name", meta.getName()+"");
 		
-		javaClass.addInterface(IType.class)
+		javaClass.addInterface(FixedLengthType.class)
 		.addMethod()
 		.setPublic()
-		.setReturnType(Short.TYPE)
-		.setName("code")
-		.setBody("return "+meta.getTypeCode()+";");
+		.setReturnType(Integer.TYPE)
+		.setName("length")
+		.setBody("return "+sizeof(meta)+";");
 		
 		javaClass.addInterface(Serializable.class);
 		javaClass.addField()
@@ -121,7 +145,6 @@ public class Generator {
 		.append(Generator.class.getName())
 		.append("\n -t <template_file_path> *\n")
 		.append(" -c <generated_class_name> *\n")
-		.append(" -s <type_code_short> *\n")
 		.append(" -d <target_dir_path> \n")
 		.append(" -p <generated_package_name>\n")
 		.append(" -a <protocol_annot_name>\n")
@@ -156,15 +179,7 @@ public class Generator {
 			printUsage();
 			System.exit(0);
 		}
-		if((i = args.indexOf("-s")) != -1)
-		{
-			typeCode = Short.valueOf(args.get(i+1));
-		}
-		else
-		{
-			printUsage();
-			System.exit(0);
-		}
+		
 		if((i = args.indexOf("-p")) != -1)
 		{
 			pkgName = args.get(i+1);
@@ -172,6 +187,10 @@ public class Generator {
 		if((i = args.indexOf("-a")) != -1)
 		{
 			name = args.get(i+1);
+		}
+		else
+		{
+			name = className.toUpperCase();
 		}
 		if((i = args.indexOf("-d")) != -1)
 		{
@@ -202,7 +221,7 @@ public class Generator {
 					t.printStackTrace();
 				
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		System.out.println("End job..");
