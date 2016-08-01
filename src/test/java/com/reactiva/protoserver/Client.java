@@ -69,7 +69,12 @@ public class Client {
 		final AtomicLong sessStats = new AtomicLong();
 		
 		ExecutorService ex = Executors.newCachedThreadPool();
-		System.out.println("Message bytes len => "+login.getUserLogonID().getBytes(StandardCharsets.UTF_8).length);
+		try {
+			System.out.println("Message bytes len => "+codec.sizeof(login.getClass()));
+		} catch (CodecException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		System.out.println("Client.main() #### START");
 		long start = System.currentTimeMillis();
 		for (int i = 0; i < CONCURRENCY; i++) {
@@ -122,7 +127,7 @@ public class Client {
 		//sendRequestCodec(10);
 		
 	}
-	static ITOCCodec codec = new ITOCCodec();
+	static final ITOCCodec codec = new ITOCCodec();
 	static final ITOCLogin login = new ITOCLogin("sutanu81");
 	
 	private static void sendRequestCodec(int n) throws UnknownHostException, IOException, CodecException
