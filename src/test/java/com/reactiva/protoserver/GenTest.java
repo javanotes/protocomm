@@ -8,8 +8,8 @@ public class GenTest {
 
 	public static void main(String[] args) {
 		
-		Generator.run(Arrays.asList("-t", "C:\\workspace\\template.txt", "-c", "ITOCLogin", "-s", "1", "-d",
-				"C:\\workspace", "-p", "com.somos.smsnow"));
+		Generator.run(Arrays.asList("-t", "C:\\Users\\esutdal\\Documents\\SOMOS\\codegen\\template.txt", "-c", "ITOCLogin", "-s", "1", "-d",
+				"C:\\Users\\esutdal\\Documents\\SOMOS\\codegen\\", "-p", "com.smsnow.adaptation.server.dto"));
 
 	}
 

@@ -7,6 +7,13 @@ import java.nio.ByteBuffer;
 public interface FixedLenCodec {
 
 	/**
+	 * Return the byte length for the given protocol type.
+	 * @param protoClassType
+	 * @return
+	 * @throws CodecException 
+	 */
+	<T> int sizeof(Class<T> protoClassType) throws CodecException;
+	/**
 	 * Write a protocol instance to out stream.
 	 * @param protoClass
 	 * @param out

@@ -61,7 +61,7 @@ public class ITOCCodec extends AbstractCodec implements DynamicFixedLenCodec {
 			default:
 				bytes = new byte[f.length];
 				Arrays.fill(bytes, (byte)0);
-				out.write(bytes);
+				out.write(bytes, 0, f.length);
 				break;
 		
 		}
@@ -96,19 +96,30 @@ public class ITOCCodec extends AbstractCodec implements DynamicFixedLenCodec {
 				ret = readAsNumeric(f, in);
 				break;
 			case TEXT:
-				bytes = new byte[f.length];
-				in.readFully(bytes);
+				bytes = readFully(in, f.length);
 				ret = new String(bytes, StandardCharsets.UTF_8);
 				break;
 			default:
-				bytes = new byte[f.length];
-				in.readFully(bytes);
+				bytes = readFully(in, f.length);
 				break;
 		
 		}
 		return ret;
 	}
-	
+	private static byte[] readFully(DataInputStream in, int len) throws IOException
+	{
+		byte[] b = new byte[len];
+		int read = 0, totalRead = 0;
+		do {
+			read = in.read(b, totalRead, (len - totalRead));
+			if(read == -1)
+				break;
+			totalRead += read;
+		} while (totalRead < len);
+		
+		Assert.isTrue(totalRead == len, "Expecting "+len+" bytes. Got "+totalRead);
+		return b;
+	}
 	private void invokeSetter(Object p, FormatMeta f, DataInputStream in) throws ReflectiveOperationException, IOException
 	{
 		Object o = readBytes(f, in);
@@ -213,6 +224,7 @@ public class ITOCCodec extends AbstractCodec implements DynamicFixedLenCodec {
 		}
 		try {
 			out.writeInt(metaData.getSize());
+			out.flush();
 		} catch (IOException e2) {
 			throw new CodecException(e2, Type.IO_ERR);
 		}
@@ -265,6 +277,16 @@ public class ITOCCodec extends AbstractCodec implements DynamicFixedLenCodec {
 		byte [] b = new byte[in.remaining()];
 		in.get(b);
 		return decode(protoClassType, metaData, new DataInputStream(new ByteArrayInputStream(b)));
+	}
+	@Override
+	public <T> int sizeof(Class<T> protoClassType) throws CodecException {
+		ProtocolMeta proto = null;
+		try {
+			proto = getMeta(protoClassType);
+			return proto.getSize();
+		} catch (CodecException e) {
+			throw e;
+		}
 	}
 	
 }

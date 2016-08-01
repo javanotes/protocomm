@@ -11,9 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.reactiva.emulator.xcomm.handlers.ITOCLogin;
-import com.reactiva.emulator.xcomm.sh.ITOCCodecHandler;
-import com.smsnow.protocol.FixedLenCodec;
+import com.smsnow.adaptation.server.dto.ITOCLogin;
 import com.smsnow.protocol.CodecException;
 import com.smsnow.protocol.ITOCCodec;
 
@@ -34,23 +32,7 @@ public class Client {
 			s.close();
 		}
 	}
-	static ITOCCodecHandler codec = new ITOCCodecHandler();
-	static void sendRequestCodec(ITOCLogin msg) throws UnknownHostException, IOException, CodecException
-	{
-		
-		codec.getCodec().put(msg.length(), msg.getClass().getName());
-		Socket s = new Socket("localhost", PORT);
-		try {
-			DataOutputStream out = new DataOutputStream(s.getOutputStream());
-			DataInputStream in = new DataInputStream(s.getInputStream());
-			codec.write(msg, out);
-			out.flush();
-			ITOCLogin resp = (ITOCLogin) codec.read(in);
-			System.out.println("Got response => "+resp );
-		} finally {
-			s.close();
-		}
-	}
+	
 	
 	static void sendRequests(final String msg) throws UnknownHostException, IOException
 	{
@@ -70,6 +52,8 @@ public class Client {
 			s.close();
 		}
 	}
+	
+		
 	static final String SHORT_MSG = "HELLO SOMOS ";
 	static final String MEDIUM_MSG = "This is a medium text. Contains numb3r5 and, % character$. ";
 	static final String LONG_MSG = "SAC    7326995108BRSAC*****    																			"
@@ -79,13 +63,13 @@ public class Client {
 			+ "GRSP-NSR:,2016-06-07,13-10-15-CST:::COMPLD,00::ID=BRSACWGM,RO=BRSAC:CNT=02:NUM=\"8888347500        \":NUM=\"8888347501  ";
 	
 	
-	private static void runPerf(final String msg)
+	private static void runPerf()
 	{
 
 		final AtomicLong sessStats = new AtomicLong();
 		
 		ExecutorService ex = Executors.newCachedThreadPool();
-		System.out.println("Message bytes len => "+msg.getBytes(StandardCharsets.UTF_8).length);
+		System.out.println("Message bytes len => "+login.getUserLogonID().getBytes(StandardCharsets.UTF_8).length);
 		System.out.println("Client.main() #### START");
 		long start = System.currentTimeMillis();
 		for (int i = 0; i < CONCURRENCY; i++) {
@@ -99,11 +83,12 @@ public class Client {
 						{
 							//sendRequest("HELLO SOMOS " + i);
 							long start = System.currentTimeMillis();
-							sendRequests(msg);
+							//sendRequests(msg);
+							sendRequestCodec(CYCLE);
 							long end = System.currentTimeMillis();
 							sessStats.addAndGet(end-start);
 							
-						} catch (IOException e) {
+						} catch (Exception e) {
 							e.printStackTrace();
 						}
 					}
@@ -127,14 +112,39 @@ public class Client {
 	
 	}
 	
-	static int ITERATION = 10, PORT = 8081, CONCURRENCY = 100, CYCLE = 100;
+	static int ITERATION = 10, PORT = 8081, CONCURRENCY = 10, CYCLE = 10;
 	
 	public static void main(String[] args) throws Exception {
 		//simpleTest();
-		//simpleConcurrentTest();
-		//runPerf(LONG_MSG);
+		simpleConcurrentTest();
+		//runPerf();
 		
-		sendRequestCodec(new ITOCLogin("12345678", "87654321", "Z", "ADMINDAL"));
+		//sendRequestCodec(10);
+		
+	}
+	static ITOCCodec codec = new ITOCCodec();
+	static final ITOCLogin login = new ITOCLogin("sutanu81");
+	
+	private static void sendRequestCodec(int n) throws UnknownHostException, IOException, CodecException
+	{
+		Socket s = new Socket("localhost", PORT);
+		try 
+		{
+			DataOutputStream out = new DataOutputStream(s.getOutputStream());
+			DataInputStream in = new DataInputStream(s.getInputStream());
+				
+			
+			for (int i = 0; i < n; i++) {
+				codec.encode(login, out);
+				out.flush();
+				System.out.println("Sent request..");
+				ITOCLogin resp = codec.decode(ITOCLogin.class, in);
+				System.out.println("Response => " + resp);
+			}
+			
+		} finally {
+			s.close();
+		}
 	}
 	private static void simpleTest()
 	{
@@ -149,7 +159,7 @@ public class Client {
 	}
 	private static void simpleConcurrentTest()
 	{
-		ExecutorService ex = Executors.newFixedThreadPool(2);
+		ExecutorService ex = Executors.newFixedThreadPool(1);
 		for(int i=0; i<ITERATION; i++)
 		{
 			ex.submit(new Runnable() {
@@ -157,14 +167,9 @@ public class Client {
 				@Override
 				public void run() {
 					try {
-						sendRequest(SHORT_MSG);
-						try {
-							Thread.sleep(10);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					} catch (IOException e) {
+						sendRequestCodec(1);
+						
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 				}

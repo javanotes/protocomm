@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <class-diagram version="1.1.10" icons="true" always-add-relationships="false" generalizations="true" realizations="true" 
   associations="true" dependencies="false" nesting-relationships="true" router="FAN">  
-  <class id="1" language="java" name="com.reactiva.emulator.xcomm.TCPConnector" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/TCPConnector.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="1" language="java" name="com.smsnow.adaptation.server.TCPConnector" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/TCPConnector.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="337" y="103"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
@@ -10,8 +10,8 @@
       <operations public="false" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="2" language="java" name="com.reactiva.emulator.xcomm.TCPConnector.HandlerInitializer" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/TCPConnector.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="2" language="java" name="com.smsnow.adaptation.server.TCPConnector.HandlerInitializer" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/TCPConnector.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="337" y="-42"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
@@ -19,8 +19,8 @@
       <operations public="false" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="3" language="java" name="com.reactiva.emulator.xcomm.Config" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/Config.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="3" language="java" name="com.smsnow.adaptation.server.Config" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/Config.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="69" y="101"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
@@ -28,8 +28,8 @@
       <operations public="true" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="4" language="java" name="com.reactiva.emulator.xcomm.Config.HostAndPort" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/Config.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="4" language="java" name="com.smsnow.adaptation.server.Config.HostAndPort" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/Config.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="68" y="311"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
@@ -37,8 +37,8 @@
       <operations public="false" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="5" language="java" name="com.reactiva.emulator.xcomm.sh.RequestConvertorHandler" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/sh/RequestConvertorHandler.java" binary="false" 
+  <class id="5" language="java" name="com.smsnow.adaptation.server.pipe.RequestConvertorHandler" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/pipe/RequestConvertorHandler.java" binary="false" 
     corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="666" y="-40"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
@@ -47,8 +47,9 @@
       <operations public="false" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="6" language="java" name="com.reactiva.emulator.xcomm.sh.RequestConvertorHandlerFactory" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/sh/RequestConvertorHandlerFactory.java" binary="false" 
+  <class id="6" language="java" name="com.smsnow.adaptation.server.pipe.RequestConvertorHandlerFactory" 
+    project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/pipe/RequestConvertorHandlerFactory.java" binary="false" 
     corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="646" y="-150"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
@@ -57,8 +58,8 @@
       <operations public="false" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="7" language="java" name="com.reactiva.emulator.xcomm.sh.RequestProcessorHandler" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/sh/RequestProcessorHandler.java" binary="false" 
+  <class id="7" language="java" name="com.smsnow.adaptation.server.pipe.RequestProcessorHandler" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/pipe/RequestProcessorHandler.java" binary="false" 
     corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="669" y="96"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
@@ -67,8 +68,8 @@
       <operations public="false" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="8" language="java" name="com.reactiva.emulator.xcomm.sh.ResponseConvertorHandler" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/sh/ResponseConvertorHandler.java" binary="false" 
+  <class id="8" language="java" name="com.smsnow.adaptation.server.pipe.ResponseConvertorHandler" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/pipe/ResponseConvertorHandler.java" binary="false" 
     corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="667" y="241"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
@@ -77,8 +78,8 @@
       <operations public="false" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="9" language="java" name="com.reactiva.emulator.xcomm.sh.TerminalHandler" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/sh/TerminalHandler.java" binary="false" 
+  <class id="9" language="java" name="com.smsnow.adaptation.server.pipe.TerminalHandler" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/pipe/TerminalHandler.java" binary="false" 
     corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="339" y="242"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
@@ -87,8 +88,8 @@
       <operations public="false" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="10" language="java" name="com.reactiva.emulator.xcomm.sh.BasicChannelHandler" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/sh/BasicChannelHandler.java" binary="false" 
+  <class id="10" language="java" name="com.smsnow.adaptation.server.sh.BasicChannelHandler" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/sh/BasicChannelHandler.java" binary="false" 
     corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="95" y="-151"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
@@ -97,8 +98,8 @@
       <operations public="false" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="11" language="java" name="com.reactiva.emulator.xcomm.dto.Request" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/dto/Request.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="11" language="java" name="com.smsnow.adaptation.server.dto.Request" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/dto/Request.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="939" y="21"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
@@ -106,8 +107,8 @@
       <operations public="false" package="false" protected="true" private="false" static="false"/>    
     </display>  
   </class>  
-  <class id="12" language="java" name="com.reactiva.emulator.xcomm.dto.Response" project="protocomm" 
-    file="/protocomm/src/main/java/com/reactiva/emulator/xcomm/dto/Response.java" binary="false" corner="BOTTOM_RIGHT">    
+  <class id="12" language="java" name="com.smsnow.adaptation.server.dto.Response" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/server/dto/Response.java" binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="941" y="166"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
@@ -117,98 +118,84 @@
   </class>  
   <association id="13">    
     <end type="SOURCE" refId="1" navigable="false">      
-      <attribute id="14" name="processor">        
+      <attribute id="14" name="config">        
         <position height="0" width="0" x="0" y="0"/>      
       </attribute>      
       <multiplicity id="15" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="7" navigable="true"/>    
+    <end type="TARGET" refId="3" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <nesting id="16">    
-    <end type="SOURCE" refId="3"/>    
-    <end type="TARGET" refId="4"/>  
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="2"/>  
   </nesting>  
   <association id="17">    
+    <bendpoint x="470" y="49"/>    
+    <bendpoint x="471" y="-149"/>    
     <end type="SOURCE" refId="1" navigable="false">      
-      <attribute id="18" name="targets">        
+      <attribute id="18" name="decoder">        
         <position height="0" width="0" x="0" y="0"/>      
       </attribute>      
       <multiplicity id="19" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="4" navigable="true"/>    
+    <end type="TARGET" refId="6" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="20">    
     <end type="SOURCE" refId="1" navigable="false">      
-      <attribute id="21" name="config">        
+      <attribute id="21" name="targets">        
         <position height="0" width="0" x="0" y="0"/>      
       </attribute>      
       <multiplicity id="22" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
+    <end type="TARGET" refId="4" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="23">    
-    <bendpoint x="189" y="-13"/>    
-    <bendpoint x="94" y="-12"/>    
     <end type="SOURCE" refId="1" navigable="false">      
-      <attribute id="24" name="bch">        
+      <attribute id="24" name="terminal">        
         <position height="0" width="0" x="0" y="0"/>      
       </attribute>      
       <multiplicity id="25" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="10" navigable="true"/>    
+    <end type="TARGET" refId="9" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <nesting id="26">    
-    <end type="SOURCE" refId="1"/>    
-    <end type="TARGET" refId="2"/>  
-  </nesting>  
-  <association id="27">    
+  <association id="26">    
     <end type="SOURCE" refId="1" navigable="false">      
-      <attribute id="28" name="encoder">        
+      <attribute id="27" name="processor">        
         <position height="0" width="0" x="0" y="0"/>      
       </attribute>      
-      <multiplicity id="29" minimum="0" maximum="1">        
+      <multiplicity id="28" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="8" navigable="true"/>    
+    <end type="TARGET" refId="7" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
+  <nesting id="29">    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="4"/>  
+  </nesting>  
   <association id="30">    
     <end type="SOURCE" refId="1" navigable="false">      
-      <attribute id="31" name="terminal">        
+      <attribute id="31" name="encoder">        
         <position height="0" width="0" x="0" y="0"/>      
       </attribute>      
       <multiplicity id="32" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="9" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <association id="33">    
-    <bendpoint x="470" y="49"/>    
-    <bendpoint x="471" y="-149"/>    
-    <end type="SOURCE" refId="1" navigable="false">      
-      <attribute id="34" name="decoder">        
-        <position height="0" width="0" x="0" y="0"/>      
-      </attribute>      
-      <multiplicity id="35" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
-      </multiplicity>    
-    </end>    
-    <end type="TARGET" refId="6" navigable="true"/>    
+    <end type="TARGET" refId="8" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
