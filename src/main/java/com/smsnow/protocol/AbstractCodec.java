@@ -138,10 +138,13 @@ public abstract class AbstractCodec implements FixedLenCodec {
 			Assert.isTrue(protoClassType.isAnnotationPresent(Protocol.class), "Protocol classes should be annotated with @Protocol");
 			if(!cache.containsKey(protoClassType.getName()))
 			{
-				//not extremely imp to synchronize here
-				ProtocolMeta protoMeta = prepareMeta(protoClassType);
-				protoMeta.validate();
-				cache.put(protoClassType.getName(), protoMeta);
+				synchronized (cache) {
+					if (!cache.containsKey(protoClassType.getName())) {
+						ProtocolMeta protoMeta = prepareMeta(protoClassType);
+						protoMeta.validate();
+						cache.put(protoClassType.getName(), protoMeta);
+					}
+				}
 			}
 		} catch (Exception e) {
 			throw new CodecException(e, Type.META_ERR);

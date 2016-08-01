@@ -26,8 +26,10 @@ public class ITOCLoginHandler extends AbstractRequestHandler {
 	@Override
 	public Serializable process(Serializable request) throws Exception {
 		ITOCLogin dto = (ITOCLogin) request;
-		log.info("### Got new request: "+request);
-		log.info("Capitalizing login id");
+		if (log.isDebugEnabled()) {
+			log.debug("### Got new request: " + request);
+			log.debug("Capitalizing login id");
+		}
 		dto.setUserLogonID(dto.getUserLogonID().toUpperCase());
 		return dto;
 	}

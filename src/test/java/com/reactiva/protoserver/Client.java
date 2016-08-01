@@ -103,21 +103,21 @@ public class Client {
 			
 		}
 		long stop = System.currentTimeMillis();
-		System.out.println("Total Time:: "+timeString(stop-start));
-		System.out.println("Request per session:: "+(CYCLE));
-		System.out.println("Total sessions:: "+(CONCURRENCY*ITERATION));
-		System.out.println("Avg Time per session:: "+timeString(sessStats.get()/(CONCURRENCY*ITERATION)));
 		System.out.println("Total Requests completed:: "+(ITERATION*CONCURRENCY*CYCLE));
+		System.out.println("Total sessions:: "+(CONCURRENCY*ITERATION));
+		System.out.println("Requests per session:: "+(CYCLE));
+		System.out.println("Total Time:: "+timeString(stop-start));
+		System.out.println("Avg Time per session:: "+timeString(sessStats.get()/(CONCURRENCY*ITERATION)));
 		System.out.println("Avg Time per request:: "+timeString(sessStats.get()/(CONCURRENCY*ITERATION*CYCLE)));
 	
 	}
 	
-	static int ITERATION = 10, PORT = 8081, CONCURRENCY = 10, CYCLE = 10;
+	static int ITERATION = 1, PORT = 8081, CONCURRENCY = 1000, CYCLE = 100;
 	
 	public static void main(String[] args) throws Exception {
 		//simpleTest();
-		simpleConcurrentTest();
-		//runPerf();
+		//simpleConcurrentTest();
+		runPerf();
 		
 		//sendRequestCodec(10);
 		
@@ -137,9 +137,9 @@ public class Client {
 			for (int i = 0; i < n; i++) {
 				codec.encode(login, out);
 				out.flush();
-				System.out.println("Sent request..");
+				//System.out.println("Sent request..");
 				ITOCLogin resp = codec.decode(ITOCLogin.class, in);
-				System.out.println("Response => " + resp);
+				//System.out.println("Response => " + resp);
 			}
 			
 		} finally {
@@ -159,7 +159,7 @@ public class Client {
 	}
 	private static void simpleConcurrentTest()
 	{
-		ExecutorService ex = Executors.newFixedThreadPool(1);
+		ExecutorService ex = Executors.newFixedThreadPool(2);
 		for(int i=0; i<ITERATION; i++)
 		{
 			ex.submit(new Runnable() {
@@ -168,7 +168,7 @@ public class Client {
 				public void run() {
 					try {
 						sendRequestCodec(1);
-						
+						Thread.sleep(100);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}

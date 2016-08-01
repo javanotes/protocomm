@@ -21,20 +21,27 @@ public class ProtocolMeta {
 	public int getSize() {
 		return size;
 	}
-	public void setSize(int size) {
+	private void setSize(int size) {
 		this.size = size;
 	}
+	private volatile boolean validated = false;
 	protected void validate() {
-		int off = 0, len = 0;
-		setSize(len);
-		for(Entry<Integer, FormatMeta> e : getFormats().entrySet())
-		{
-			FormatMeta fm = e.getValue();
-			Assert.isTrue(fm.offset == (off + len), name+" => Incorrect length at offset:"+off);
-			off = fm.offset;
-			len = fm.length;
-			size += len;
-						
+		if (!validated) {
+			synchronized (this) {
+				if (!validated) {
+					int off = 0, len = 0;
+					setSize(len);
+					for (Entry<Integer, FormatMeta> e : getFormats().entrySet()) {
+						FormatMeta fm = e.getValue();
+						Assert.isTrue(fm.offset == (off + len), name + " => Incorrect length at offset:" + off);
+						off = fm.offset;
+						len = fm.length;
+						size += len;
+
+					}
+					validated = true;
+				}
+			}
 		}
 		
 	}

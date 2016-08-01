@@ -45,17 +45,17 @@ public class RequestConvertorHandler extends ByteToMessageDecoder {
 	}
 	@Override
 	protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-		log.info("Begin request conversion");
+		log.debug("Begin request conversion");
 		int size = codec.sizeof(rh.requestMapping());
 		int len = in.readableBytes()-4;
 		Assert.isTrue(len == size, "Expecting a message of size "+size+". Found "+len);
         
-		log.info("Reading request bytes");
+		log.debug("Reading request bytes");
 		byte[] b = new byte[in.readableBytes()];
     	in.readBytes(b);
-    	log.info("Transforming request to object");
+    	log.debug("Transforming request to object");
     	Object o = transform(new DataInputStream(new ByteArrayInputStream(b)));
-    	log.info("Transformed request to object");
+    	log.debug("Transformed request to object");
     	out.add(o);
     	
 

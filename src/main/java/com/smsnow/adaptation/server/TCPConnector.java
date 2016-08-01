@@ -71,9 +71,9 @@ class TCPConnector implements Runnable{
 		//ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes, Math.negateExact(config.protoLenBytes), 0));
 		ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes){
 			protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception{
-				log.info("Before LengthFieldBasedFrameDecoder");
+				log.debug("Before LengthFieldBasedFrameDecoder");
 				Object o = super.decode(ctx, in);
-				log.info("After LengthFieldBasedFrameDecoder");
+				log.debug("After LengthFieldBasedFrameDecoder");
 				return o;
 			}
 		});
