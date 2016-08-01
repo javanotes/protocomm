@@ -26,7 +26,7 @@ import org.springframework.util.ReflectionUtils.FieldFilter;
 
 import com.smsnow.protocol.CodecException.Type;
 
-public abstract class AbstractCodec implements FixedLenCodec {
+public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 	/**
 	 * 
 	 * @param basePkg

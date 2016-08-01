@@ -59,21 +59,21 @@ public class FormatMeta {
 	void introspect(Class<?> protoClassTyp, Class<?>...args) {
 		if (!introspected) {
 			introspected = true;
-			Method m = ClassUtils.getMethodIfAvailable(protoClassTyp, AbstractCodec.getter(getFieldName()));
+			Method m = ClassUtils.getMethodIfAvailable(protoClassTyp, AbstractFixedLenCodec.getter(getFieldName()));
 			Assert.notNull(m, getFieldName() + " Expecting a public getter");
 			m.setAccessible(true);
 			getter(m);
 			
 			if(args.length > 0)
 			{
-				m = ClassUtils.getMethodIfAvailable(protoClassTyp, AbstractCodec.setter(getFieldName()), args);
+				m = ClassUtils.getMethodIfAvailable(protoClassTyp, AbstractFixedLenCodec.setter(getFieldName()), args);
 				Assert.notNull(m, getFieldName() + " Expecting a public setter");
 				m.setAccessible(true);
 				setter(m);
 			}
 			else
 			{
-				String setter = AbstractCodec.setter(getFieldName());
+				String setter = AbstractFixedLenCodec.setter(getFieldName());
 				for(Method m2 : protoClassTyp.getMethods())
 				{
 					if(m2.getName().equals(setter))

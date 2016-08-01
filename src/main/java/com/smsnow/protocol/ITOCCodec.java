@@ -20,7 +20,7 @@ import com.smsnow.protocol.CodecException.Type;
  * @author esutdal
  *
  */
-public class ITOCCodec extends AbstractCodec implements DynamicFixedLenCodec {
+public class ITOCCodec extends AbstractFixedLenCodec implements DynamicFixedLenCodec {
 	
 	private void writeAsNumeric(FormatMeta f, Object o, DataOutputStream out) throws IOException
 	{
@@ -120,7 +120,7 @@ public class ITOCCodec extends AbstractCodec implements DynamicFixedLenCodec {
 		Assert.isTrue(totalRead == len, "Expecting "+len+" bytes. Got "+totalRead);
 		return b;
 	}
-	private void invokeSetter(Object p, FormatMeta f, DataInputStream in) throws ReflectiveOperationException, IOException
+	private void readBytesAndSet(Object p, FormatMeta f, DataInputStream in) throws ReflectiveOperationException, IOException
 	{
 		Object o = readBytes(f, in);
 		if(f.isDateFld)
@@ -149,7 +149,7 @@ public class ITOCCodec extends AbstractCodec implements DynamicFixedLenCodec {
 			FormatMeta f = e.getValue();
 			
 			try {
-				invokeSetter(tObj, f, in);
+				readBytesAndSet(tObj, f, in);
 			} catch (IOException e1) {
 				throw new CodecException(off, e1, Type.IO_ERR);
 			}
