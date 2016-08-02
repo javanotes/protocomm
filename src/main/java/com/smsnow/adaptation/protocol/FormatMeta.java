@@ -1,4 +1,4 @@
-package com.smsnow.protocol;
+package com.smsnow.adaptation.protocol;
 
 import java.lang.reflect.Method;
 
@@ -36,18 +36,20 @@ public class FormatMeta {
 	public void setFieldName(String fieldName) {
 		this.fieldName = fieldName;
 	}
-	final int offset, length;
-	final Attribute attr;
+	final int offset;
+	private final int length;
+	private final Attribute attr;
 	private String constant;
 	private String fieldName;
-	boolean isDateFld;
+	private boolean isDateFld;
 	String dateFormat;
-	Method getter, setter;
+	private Method getter;
+	private Method setter;
 	public void getter(Method m) {
-		getter = m;
+		setGetter(m);
 	}
 	public void setter(Method m) {
-		setter = m;
+		setSetter(m);
 	}
 	public String getConstant() {
 		return constant;
@@ -56,7 +58,7 @@ public class FormatMeta {
 		this.constant = constant;
 	}
 	
-	void introspect(Class<?> protoClassTyp, Class<?>...args) {
+	public void introspect(Class<?> protoClassTyp, Class<?>...args) {
 		if (!introspected) {
 			introspected = true;
 			Method m = ClassUtils.getMethodIfAvailable(protoClassTyp, AbstractFixedLenCodec.getter(getFieldName()));
@@ -88,5 +90,29 @@ public class FormatMeta {
 			}
 			
 		}
+	}
+	public int getLength() {
+		return length;
+	}
+	public Attribute getAttr() {
+		return attr;
+	}
+	public boolean isDateFld() {
+		return isDateFld;
+	}
+	public void setDateFld(boolean isDateFld) {
+		this.isDateFld = isDateFld;
+	}
+	public Method getSetter() {
+		return setter;
+	}
+	public void setSetter(Method setter) {
+		this.setter = setter;
+	}
+	public Method getGetter() {
+		return getter;
+	}
+	public void setGetter(Method getter) {
+		this.getter = getter;
 	}
 }

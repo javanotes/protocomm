@@ -2,7 +2,7 @@ package com.reactiva.protoserver;
 
 import java.util.Arrays;
 
-import com.smsnow.protocol.gen.Generator;
+import com.smsnow.adaptation.codegen.Generator;
 
 public class GenTest {
 

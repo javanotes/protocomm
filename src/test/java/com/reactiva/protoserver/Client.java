@@ -11,9 +11,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.smsnow.adaptation.protocol.CodecException;
+import com.smsnow.adaptation.protocol.itoc.StreamedITOCCodec;
 import com.smsnow.adaptation.server.dto.ITOCLogin;
-import com.smsnow.protocol.CodecException;
-import com.smsnow.protocol.ITOCCodec;
 
 public class Client {
 
@@ -68,12 +68,11 @@ public class Client {
 
 		final AtomicLong sessStats = new AtomicLong();
 		
-		ExecutorService ex = Executors.newCachedThreadPool();
+		ExecutorService ex = Executors.newFixedThreadPool(MAX_THREAD);
 		try {
 			System.out.println("Message bytes len => "+codec.sizeof(login.getClass()));
 		} catch (CodecException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			
 		}
 		System.out.println("Client.main() #### START");
 		long start = System.currentTimeMillis();
@@ -111,13 +110,14 @@ public class Client {
 		System.out.println("Total Requests completed:: "+(ITERATION*CONCURRENCY*CYCLE));
 		System.out.println("Total sessions:: "+(CONCURRENCY*ITERATION));
 		System.out.println("Requests per session:: "+(CYCLE));
+		System.out.println("Max concurrent connection:: "+(MAX_THREAD));
 		System.out.println("Total Time:: "+timeString(stop-start));
 		System.out.println("Avg Time per session:: "+timeString(sessStats.get()/(CONCURRENCY*ITERATION)));
 		System.out.println("Avg Time per request:: "+timeString(sessStats.get()/(CONCURRENCY*ITERATION*CYCLE)));
 	
 	}
 	
-	static int ITERATION = 1, PORT = 8081, CONCURRENCY = 1000, CYCLE = 100;
+	static int ITERATION = 10, PORT = 8081, CONCURRENCY = 100, CYCLE = 100, MAX_THREAD = 20;
 	
 	public static void main(String[] args) throws Exception {
 		//simpleTest();
@@ -127,7 +127,7 @@ public class Client {
 		//sendRequestCodec(10);
 		
 	}
-	static final ITOCCodec codec = new ITOCCodec();
+	static final StreamedITOCCodec codec = new StreamedITOCCodec();
 	static final ITOCLogin login = new ITOCLogin("sutanu81");
 	
 	private static void sendRequestCodec(int n) throws UnknownHostException, IOException, CodecException
@@ -164,7 +164,7 @@ public class Client {
 	}
 	private static void simpleConcurrentTest()
 	{
-		ExecutorService ex = Executors.newFixedThreadPool(2);
+		ExecutorService ex = Executors.newFixedThreadPool(MAX_THREAD);
 		for(int i=0; i<ITERATION; i++)
 		{
 			ex.submit(new Runnable() {
@@ -173,7 +173,6 @@ public class Client {
 				public void run() {
 					try {
 						sendRequestCodec(1);
-						Thread.sleep(100);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}

@@ -1,4 +1,4 @@
-package com.smsnow.protocol.gen;
+package com.smsnow.adaptation.codegen;
 
 import java.util.HashMap;
 import java.util.Map;

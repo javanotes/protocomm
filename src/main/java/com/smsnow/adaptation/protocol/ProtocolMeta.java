@@ -1,4 +1,4 @@
-package com.smsnow.protocol;
+package com.smsnow.adaptation.protocol;
 
 import java.util.TreeMap;
 
@@ -25,7 +25,7 @@ public class ProtocolMeta {
 		this.size = size;
 	}
 	private volatile boolean validated = false;
-	protected void validate() {
+	public void validate() {
 		if (!validated) {
 			synchronized (this) {
 				if (!validated) {
@@ -35,7 +35,7 @@ public class ProtocolMeta {
 						FormatMeta fm = e.getValue();
 						Assert.isTrue(fm.offset == (off + len), name + " => Incorrect length at offset:" + off);
 						off = fm.offset;
-						len = fm.length;
+						len = fm.getLength();
 						size += len;
 
 					}

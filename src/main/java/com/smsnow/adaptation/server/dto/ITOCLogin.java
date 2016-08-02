@@ -6,10 +6,11 @@
 */
 package com.smsnow.adaptation.server.dto;
 
-import com.smsnow.protocol.Protocol;
 import java.io.Serializable;
-import com.smsnow.protocol.Format;
-import com.smsnow.protocol.Attribute;
+
+import com.smsnow.adaptation.protocol.Attribute;
+import com.smsnow.adaptation.protocol.Format;
+import com.smsnow.adaptation.protocol.Protocol;
 
 @Protocol(name = "ITOCLOGIN")
 public class ITOCLogin implements Serializable {

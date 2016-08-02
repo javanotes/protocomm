@@ -6,16 +6,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.RejectedExecutionHandler;
 import io.netty.util.concurrent.SingleThreadEventExecutor;
 /**
- * @deprecated Netty data structures are not synchronized.
  * @author esutdal
  *
  */
 class ConcurrentEventExecutor extends SingleThreadEventExecutor {
 
+	private static final Logger log = LoggerFactory.getLogger(ConcurrentEventExecutor.class);
 	private ExecutorService executors;
 	
 	/**
@@ -44,14 +47,14 @@ class ConcurrentEventExecutor extends SingleThreadEventExecutor {
 			public void run() {
 				executors.shutdown();
 				try {
-					executors.awaitTermination(10, TimeUnit.SECONDS);
+					executors.awaitTermination(30, TimeUnit.SECONDS);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
 			}
 		});
 	}
-		
+	
 	private void run0(Runnable r)
 	{
 		if (r != null) {
@@ -73,7 +76,15 @@ class ConcurrentEventExecutor extends SingleThreadEventExecutor {
 					
 					@Override
 					public void run() {
-						run0(task);
+						try {
+							run0(task);
+						}
+						catch(Exception e)
+						{
+							log.error("-- Execution thread exception --", e);
+						}
+						finally {
+						}
 					}
 				});
                 

@@ -1,4 +1,4 @@
-package com.smsnow.protocol.gen;
+package com.smsnow.adaptation.codegen;
 
 public class JFormat {
 

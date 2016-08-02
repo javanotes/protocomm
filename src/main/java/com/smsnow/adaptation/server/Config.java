@@ -11,10 +11,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
+import com.smsnow.adaptation.protocol.itoc.ITOCCodecWrapper;
 import com.smsnow.adaptation.server.pipe.RequestProcessorHandler;
 import com.smsnow.adaptation.server.pipe.ResponseConvertorHandler;
 import com.smsnow.adaptation.server.pipe.TerminalHandler;
-import com.smsnow.protocol.ITOCCodec;
 
 @Configuration
 public class Config {
@@ -43,7 +43,16 @@ public class Config {
 	int port;
 	@Value("${server.io-threads: 1}")
 	int ioThreadCount;
-	
+	@Value("${server.event-threads: 2}")
+	int eventThreadCount;
+	@Value("${server.bytebuf.enable: false}")
+	boolean useByteBuf;
+	public int getEventThreadCount() {
+		return eventThreadCount;
+	}
+	public void setEventThreadCount(int eventThreadCount) {
+		this.eventThreadCount = eventThreadCount;
+	}
 	@Value("${server.exec-threads: 4}")
 	int execThreadCount;
 	@Value("${server.monitor.enable: false}")
@@ -92,6 +101,8 @@ public class Config {
 	{
 		server().startServer();
 		if (isMonitorEnabled()) {
+			//TODO: monitor thread should be a scheduled executor
+			//just being lazy to not implement it
 			monitorThread = new Thread(server(), "TCPMon");
 			monitorThread.setDaemon(true);
 			monitorThread.start();
@@ -153,12 +164,12 @@ public class Config {
 	@DependsOn({"codec", "handler"})
 	ResponseConvertorHandler encoder() throws Exception
 	{
-		return new ResponseConvertorHandler(codec(), handler());
+		return new ResponseConvertorHandler(codec(), handler(), useByteBuf);
 	}
 	@Bean
-	ITOCCodec codec()
+	ITOCCodecWrapper codec()
 	{
-		return new ITOCCodec();
+		return new ITOCCodecWrapper(useByteBuf);
 	}
 	
 	@Bean

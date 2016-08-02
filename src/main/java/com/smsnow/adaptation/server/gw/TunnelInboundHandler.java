@@ -27,7 +27,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 /**
  * The handler class to use the server as a proxy gateway.
@@ -266,7 +265,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 	}
 	private final EventLoopGroup eventGroups;
 	private EventExecutorGroup executors;
-	public void setExecutorGroup(DefaultEventExecutorGroup executor) {
+	public void setExecutorGroup(EventExecutorGroup executor) {
 		this.executors = executor;
 	}
 	

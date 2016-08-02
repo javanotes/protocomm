@@ -1,4 +1,4 @@
-package com.smsnow.protocol.gen;
+package com.smsnow.adaptation.codegen;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -20,9 +20,9 @@ import org.jboss.forge.roaster.model.source.JavaClassSource;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import com.smsnow.protocol.Attribute;
-import com.smsnow.protocol.Format;
-import com.smsnow.protocol.Protocol;
+import com.smsnow.adaptation.protocol.Attribute;
+import com.smsnow.adaptation.protocol.Format;
+import com.smsnow.adaptation.protocol.Protocol;
 
 public class Generator {
 	

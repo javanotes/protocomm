@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import com.smsnow.adaptation.protocol.FixedLenCodec;
+import com.smsnow.adaptation.protocol.itoc.ITOCCodecWrapper;
 import com.smsnow.adaptation.server.Config.HostAndPort;
 import com.smsnow.adaptation.server.gw.OutboundEndpoint;
 import com.smsnow.adaptation.server.gw.TunnelInboundHandler;
@@ -18,12 +20,9 @@ import com.smsnow.adaptation.server.pipe.RequestConvertorHandler;
 import com.smsnow.adaptation.server.pipe.RequestProcessorHandler;
 import com.smsnow.adaptation.server.pipe.ResponseConvertorHandler;
 import com.smsnow.adaptation.server.pipe.TerminalHandler;
-import com.smsnow.protocol.FixedLenCodec;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -33,15 +32,20 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.util.concurrent.DefaultEventExecutor;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.RejectedExecutionHandler;
-
+/**
+ * The Netty server listener class that registers channel handler adapters.
+ * @author esutdal
+ *
+ */
 class TCPConnector implements Runnable{
-	private DefaultEventExecutorGroup executor;
-	private FixedLenCodec codecHandler;
+	private EventExecutorGroup executor, concExecutor;
+	private ITOCCodecWrapper codecHandler;
 	public FixedLenCodec getCodecHandler() {
 		return codecHandler;
 	}
-	public void setCodecHandler(FixedLenCodec codecHandler) {
+	public void setCodecHandler(ITOCCodecWrapper codecHandler) {
 		this.codecHandler = codecHandler;
 	}
 	private RequestHandler requestHandler;
@@ -69,15 +73,11 @@ class TCPConnector implements Runnable{
 		 * TODO: make LengthFieldBasedFrameDecoder configurable?
 		 */
 		//ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes, Math.negateExact(config.protoLenBytes), 0));
-		ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes){
-			protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception{
-				log.debug("Before LengthFieldBasedFrameDecoder");
-				Object o = super.decode(ctx, in);
-				log.debug("After LengthFieldBasedFrameDecoder");
-				return o;
-			}
-		});
-		ch.pipeline().addLast(executor, new RequestConvertorHandler(codecHandler, requestHandler), processor, encoder);
+		
+		ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes));
+		ch.pipeline().addLast(executor, new RequestConvertorHandler(codecHandler, requestHandler, config.useByteBuf));
+		ch.pipeline().addLast(concExecutor, processor);
+		ch.pipeline().addLast(executor, encoder);
 		ch.pipeline().addLast(executor, terminal);
 		
 	}
@@ -120,7 +120,7 @@ class TCPConnector implements Runnable{
 		}
 	}
 	private static Logger log = LoggerFactory.getLogger(TCPConnector.class);
-	private int port, ioThreads, eventThreads;
+	private int port, ioThreads, execThreads;
 	
 	protected RequestProcessorHandler processor;
 	protected ResponseConvertorHandler encoder;
@@ -137,7 +137,7 @@ class TCPConnector implements Runnable{
 	public TCPConnector(int port, int ioThreadCount, int execThreadCount, boolean proxy) {
 		this.port = port;
 		ioThreads = ioThreadCount;
-		eventThreads = execThreadCount;
+		execThreads = execThreadCount;
 		this.proxy = proxy;
 		
 	}
@@ -232,8 +232,7 @@ class TCPConnector implements Runnable{
 	 */
 	private void initExecThreads()
 	{
-		eventThreads = eventThreads <= 0 ? Runtime.getRuntime().availableProcessors() : eventThreads;
-		executor = new DefaultEventExecutorGroup(eventThreads, new ThreadFactory() {
+		executor = new DefaultEventExecutorGroup(config.eventThreadCount, new ThreadFactory() {
 			int n = 0;
 			@Override
 			public Thread newThread(Runnable arg0) {
@@ -244,11 +243,25 @@ class TCPConnector implements Runnable{
 		{
 			@Override
 			protected EventExecutor newChild(Executor executor, Object... args) throws Exception {
-				//ConcurrentEventExecutor not working consistently
-				/*return new ConcurrentEventExecutor(this, executor, (Integer) args[0],
-						(RejectedExecutionHandler) args[1], eventThreads);*/
-				
+								
 				return new DefaultEventExecutor(this, executor, (Integer) args[0], (RejectedExecutionHandler) args[1]);
+			}
+		};
+		
+		concExecutor = new DefaultEventExecutorGroup(1, new ThreadFactory() {
+			@Override
+			public Thread newThread(Runnable arg0) {
+				Thread t = new Thread(arg0, "xcomm-concurexecgrp");
+				return t;
+			}
+		}) 
+		{
+			@Override
+			protected EventExecutor newChild(Executor executor, Object... args) throws Exception {
+				//ConcurrentEventExecutor not working consistently
+				return new ConcurrentEventExecutor(this, executor, (Integer) args[0],
+						(RejectedExecutionHandler) args[1], execThreads);
+				
 			}
 		};
 	}
@@ -275,7 +288,10 @@ class TCPConnector implements Runnable{
 		//TODO: can be implemented for some monitoring stuff.
 		while(running)
 		{
-			doTask();
+			try {
+				doMonitorTask();
+			} finally {
+			}
 		}
 
 	}
@@ -284,15 +300,9 @@ class TCPConnector implements Runnable{
 	{
 		running = false;
 	}
-	private void doTask() {
+	protected void doMonitorTask() {
 		log.debug("--Monitor task run --");
-		synchronized (this) {
-			try {
-				wait(5000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
+		
 	}
 	private volatile boolean running = false;
 	/**

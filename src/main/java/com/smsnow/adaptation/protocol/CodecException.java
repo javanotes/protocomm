@@ -1,4 +1,4 @@
-package com.smsnow.protocol;
+package com.smsnow.adaptation.protocol;
 
 import java.text.ParseException;
 

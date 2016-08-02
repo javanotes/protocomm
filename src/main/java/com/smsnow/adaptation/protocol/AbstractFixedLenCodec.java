@@ -1,9 +1,10 @@
-package com.smsnow.protocol;
+package com.smsnow.adaptation.protocol;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
@@ -24,8 +25,12 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.FieldCallback;
 import org.springframework.util.ReflectionUtils.FieldFilter;
 
-import com.smsnow.protocol.CodecException.Type;
-
+import com.smsnow.adaptation.protocol.CodecException.Type;
+/**
+ * Abstract implementation of a {@linkplain FixedLenCodec}.
+ * @author esutdal
+ *
+ */
 public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 	/**
 	 * 
@@ -68,7 +73,7 @@ public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 	public static Date toDate(FormatMeta f, Object o) throws ReflectiveOperationException
 	{
 		Date d = null;
-		if(f.attr == Attribute.TEXT)
+		if(f.getAttr() == Attribute.TEXT)
 		{
 			SimpleDateFormat sdf = new SimpleDateFormat(f.dateFormat);
 			try {
@@ -77,7 +82,7 @@ public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 				throw new ReflectiveOperationException(e);
 			}
 		}
-		else if(f.attr == Attribute.NUMERIC)
+		else if(f.getAttr() == Attribute.NUMERIC)
 		{
 			try {
 				d = new Date((long) o);
@@ -90,15 +95,15 @@ public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 	public static Object fromDate(FormatMeta f, Date d) throws ReflectiveOperationException, IOException
 	{
 		Object o = null;
-		if(f.attr == Attribute.TEXT)
+		if(f.getAttr() == Attribute.TEXT)
 		{
 			SimpleDateFormat sdf = new SimpleDateFormat(f.dateFormat);
 			o = sdf.format(d);
 		}
-		else if(f.attr == Attribute.NUMERIC)
+		else if(f.getAttr() == Attribute.NUMERIC)
 		{
 			Long date = d.getTime();
-			switch(f.length)
+			switch(f.getLength())
 			{
 				case 1:
 					o = date.byteValue();
@@ -113,7 +118,7 @@ public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 					o = date;
 					break;
 					default:
-						throw new IOException("Got length "+f.length+" for attribute "+f.attr);
+						throw new IOException("Got length "+f.getLength()+" for attribute "+f.getAttr());
 			}
 		}
 		return o;
@@ -165,7 +170,7 @@ public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 				FormatMeta fm = new FormatMeta(f.offset(), f.length(), f.attribute());
 				fm.setConstant(f.constant());
 				fm.setFieldName(field.getName());
-				fm.isDateFld = f.dateField();
+				fm.setDateFld(f.dateField());
 				fm.dateFormat = f.dateFormat();
 				
 				fm.introspect(protoClassTyp, field.getType());
@@ -203,6 +208,28 @@ public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 	 */
 	protected Object readBytes(FormatMeta f, DataInputStream in) throws IOException
 	{
+		throw new IOException(new UnsupportedOperationException("Implementation to be provided by subclass"));
+	}
+	/**
+	 * This is the class which does the write action. Change logic here to accommodate
+	 * different protocol.
+	 * @param f
+	 * @param o
+	 * @param out
+	 * @throws IOException
+	 */
+	protected void writeBytes(FormatMeta f, Object o, ByteBuffer out) throws IOException {
+		throw new IOException(new UnsupportedOperationException("Implementation to be provided by subclass"));
+	}
+	/**
+	 * This is the class which does the read action. Change logic here to accommodate different
+	 * protocol.
+	 * @param f
+	 * @param in
+	 * @return
+	 * @throws IOException
+	 */
+	protected Object readBytes(FormatMeta f, ByteBuffer in) throws IOException {
 		throw new IOException(new UnsupportedOperationException("Implementation to be provided by subclass"));
 	}
 }

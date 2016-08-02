@@ -1,4 +1,4 @@
-package com.smsnow.protocol.gen;
+package com.smsnow.adaptation.codegen;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -7,7 +7,7 @@ import java.util.Scanner;
 
 import org.springframework.util.StringUtils;
 
-import com.smsnow.protocol.Attribute;
+import com.smsnow.adaptation.protocol.Attribute;
 
 public class FormatParser {
 
