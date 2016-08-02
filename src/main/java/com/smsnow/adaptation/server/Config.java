@@ -1,10 +1,15 @@
 package com.smsnow.adaptation.server;
 
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -45,8 +50,12 @@ public class Config {
 	int ioThreadCount;
 	@Value("${server.event-threads: 2}")
 	int eventThreadCount;
-	@Value("${server.bytebuf.enable: false}")
+	@Value("${server.proto.buffered: false}")
 	boolean useByteBuf;
+	
+	@Value("${server.proto.charset:UTF8}")
+	String charset;
+	
 	public int getEventThreadCount() {
 		return eventThreadCount;
 	}
@@ -169,9 +178,14 @@ public class Config {
 	@Bean
 	ITOCCodecWrapper codec()
 	{
-		return new ITOCCodecWrapper(useByteBuf);
+		try {
+			return new ITOCCodecWrapper(Charset.forName(charset), useByteBuf);
+		} catch (IllegalCharsetNameException e) {
+			log.warn("Unrecognized character set => "+e.getMessage()+". Using UTF8");
+			return new ITOCCodecWrapper(StandardCharsets.UTF_8, useByteBuf);
+		}
 	}
-	
+	private static final Logger log = LoggerFactory.getLogger(Config.class);
 	@Bean
 	TerminalHandler terminal()
 	{

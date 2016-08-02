@@ -3,6 +3,7 @@ package com.smsnow.adaptation.protocol.itoc;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 import org.springframework.util.Assert;
 
@@ -25,13 +26,13 @@ public class ITOCCodecWrapper implements FixedLenCodec,StreamedFixedLenCodec,Buf
 	 * 
 	 * @param useByteBuf
 	 */
-	public ITOCCodecWrapper(boolean useByteBuf) {
+	public ITOCCodecWrapper(Charset charset, boolean useByteBuf) {
 		if(useByteBuf){
-			buff = new BufferedITOCCodec();
+			buff = new BufferedITOCCodec(charset);
 			fl = buff;
 		}
 		else{
-			str = new StreamedITOCCodec();
+			str = new StreamedITOCCodec(charset);
 			fl = str;
 		}
 	}

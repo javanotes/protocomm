@@ -2,6 +2,7 @@ package com.smsnow.adaptation.protocol.itoc;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
@@ -22,8 +23,16 @@ import com.smsnow.adaptation.protocol.ProtocolMeta;
  *
  */
 public class BufferedITOCCodec extends AbstractFixedLenCodec implements BufferedFixedLenCodec {
-	
-	
+	final Charset charset;
+	public BufferedITOCCodec(Charset charset) {
+		this.charset = charset;
+	}
+	/**
+	 * UTF8 charset
+	 */
+	public BufferedITOCCodec() {
+		this(StandardCharsets.UTF_8);
+	}
 	private static void writeAsNumeric(FormatMeta f, Object o, ByteBuffer out) throws IOException
 	{
 		switch(f.getLength())
@@ -59,7 +68,7 @@ public class BufferedITOCCodec extends AbstractFixedLenCodec implements Buffered
 				writeAsNumeric(f, o, out);
 				break;
 			case TEXT:
-				bytes = o.toString().getBytes(StandardCharsets.UTF_8);
+				bytes = o.toString().getBytes(charset);
 				out.put(bytes, 0, f.getLength());
 				break;
 			default:
@@ -103,7 +112,7 @@ public class BufferedITOCCodec extends AbstractFixedLenCodec implements Buffered
 				break;
 			case TEXT:
 				bytes = readFully(in, f.getLength());
-				ret = new String(bytes, StandardCharsets.UTF_8);
+				ret = new String(bytes, charset);
 				break;
 			default:
 				bytes = readFully(in, f.getLength());
