@@ -24,22 +24,22 @@ import com.smsnow.adaptation.server.pipe.TerminalHandler;
 @Configuration
 public class Config {
 
-	boolean isProxyMode() {
+	public boolean isProxyMode() {
 		return proxyMode;
 	}
-	int getPort() {
+	public int getPort() {
 		return port;
 	}
-	int getMaxThread() {
+	public int getMaxThread() {
 		return ioThreadCount;
 	}
-	int getProtoLenMax() {
+	public int getProtoLenMax() {
 		return protoLenMax;
 	}
-	int getProtoLenOffset() {
+	public int getProtoLenOffset() {
 		return protoLenOffset;
 	}
-	int getProtoLenBytes() {
+	public int getProtoLenBytes() {
 		return protoLenBytes;
 	}
 	@Value("${server.gw: false}")

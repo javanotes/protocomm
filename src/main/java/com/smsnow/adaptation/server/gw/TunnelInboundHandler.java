@@ -1,6 +1,5 @@
 package com.smsnow.adaptation.server.gw;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,9 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import com.smsnow.adaptation.loadbal.Balancer;
-import com.smsnow.adaptation.loadbal.BalancingStrategy;
 import com.smsnow.adaptation.loadbal.Target.Algorithm;
+import com.smsnow.adaptation.server.Config;
 import com.smsnow.adaptation.server.Utils;
 
 import io.netty.bootstrap.Bootstrap;
@@ -27,6 +25,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.util.concurrent.EventExecutorGroup;
 /**
  * The handler class to use the server as a proxy gateway.
@@ -38,7 +37,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(TunnelInboundHandler.class);
 	
-	private final OutboundEndpoints endpoints;
+	private final OutboundEndpointsBalancer endpoints;
 	private final int size;
 	
 	
@@ -51,15 +50,12 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		Assert.notNull(targets, "Target destination is null");
 		Assert.notEmpty(targets, "Target destination is empty");
 		
-		endpoints = new OutboundEndpoints(targets, Algorithm.ROUNDROBIN);
+		endpoints = new OutboundEndpointsBalancer(targets, Algorithm.ROUNDROBIN);
 		size = endpoints.size();
-		
-		//TODO: need to change balancing algorithm based on thread local
-		balancer = Balancer.getBalancer(Collections.synchronizedList(targets), Algorithm.ROUNDROBIN);
 		
 		this.eventGroups = eventGroup;
 		
-		log.info("Using balancing strategy: "+balancer.strategy());
+		log.info("Using balancing strategy: "+endpoints.strategy());
 	}
 	final ConcurrentMap<String, OEMetrics> activeSessions = new ConcurrentHashMap<>();
 	final ConcurrentMap<String, Object> reconnectingHosts = new ConcurrentHashMap<>();
@@ -119,8 +115,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
     
     private OutboundEndpoint getNext()
     {
-    	OutboundEndpoint target = balancer.getNext();
-    	return endpoints.get(target);
+    	return endpoints.getNext();
     }
     
     private void onTargetReady(ChannelHandlerContext ctx, Object msg, OutboundEndpoint target)
@@ -136,7 +131,8 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
 		int c = 0;
 		boolean written = false;
-		while (c++ < size) {
+		while (c++ < size) 
+		{
 			OutboundEndpoint target = getNext();
 			try 
 			{
@@ -172,6 +168,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 					break;
 				}
 			} finally {
+				target.unlock();
 			} 
 		}
 		if(!written)
@@ -200,23 +197,15 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
     	
     	final TunnelOutboundHandler tunnelOutHdlr = new TunnelOutboundHandler();
     	
-		// Start the connection attempt.
-		Bootstrap b = new Bootstrap();
-		b
-		.group(eventGroups)
-		.channel(NioSocketChannel.class)
-		.handler(new ChannelInitializer<Channel>() {
+		Bootstrap b = bootstrap();
+		b.handler(new ChannelInitializer<Channel>() {
 
 			@Override
 			protected void initChannel(Channel ch) throws Exception {
-				ch.pipeline().addLast(executors, tunnelOutHdlr);
+				ch.pipeline().addLast(executors, new LengthFieldBasedFrameDecoder(cfg.getProtoLenMax(), cfg.getProtoLenOffset(), cfg.getProtoLenBytes()), tunnelOutHdlr);
 				
 			}
-		})
-		.option(ChannelOption.AUTO_READ, false)
-		.option(ChannelOption.SO_KEEPALIVE, true)
-		.option(ChannelOption.SO_REUSEADDR, true)
-		;
+		});
 		
 		ChannelFuture f = b.connect(h.getHost(), h.getPort());
 		log.info("Negotiating destination "+h);
@@ -231,8 +220,20 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		}
 		h.setTunnelOutHandler(tunnelOutHdlr);
 	}
-    private BalancingStrategy<OutboundEndpoint> balancer;
     private ConcurrentMap<String, UUID> sessions = new ConcurrentHashMap<>();
+    private Bootstrap bootstrap()
+    {
+    	Bootstrap b = new Bootstrap();
+		b
+		.group(eventGroups)
+		.channel(NioSocketChannel.class)
+		.option(ChannelOption.AUTO_READ, false)
+		.option(ChannelOption.SO_KEEPALIVE, true)
+		.option(ChannelOption.SO_REUSEADDR, true)
+		;
+		
+		return b;
+    }
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) {
 		
@@ -265,8 +266,12 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 	}
 	private final EventLoopGroup eventGroups;
 	private EventExecutorGroup executors;
-	public void setExecutorGroup(EventExecutorGroup executor) {
+	public void setOutboundExecutor(EventExecutorGroup executor) {
 		this.executors = executor;
+	}
+	private Config cfg;
+	public void setConfig(Config config) {
+		cfg = config;
 	}
 	
 }

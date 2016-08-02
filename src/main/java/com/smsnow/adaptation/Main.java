@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: TNServer.java
+* FILE: Main.java
 *
 The MIT License (MIT)
 
@@ -38,7 +38,7 @@ public class Main {
   public static void main(String[] args) {
 	  new SpringApplicationBuilder()
 	    .sources(Main.class)
-	    //.bannerMode(org.springframework.boot.Banner.Mode.OFF)
+	    .bannerMode(org.springframework.boot.Banner.Mode.OFF)
 	    .run(args);
   }
   

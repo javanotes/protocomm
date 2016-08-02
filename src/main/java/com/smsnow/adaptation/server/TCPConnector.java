@@ -92,11 +92,12 @@ class TCPConnector implements Runnable{
 			synchronized (TCPConnector.class) {
 				if (tunnelHandler == null) {
 					tunnelHandler = new TunnelInboundHandler(loadTargets(), eventLoop);
-					tunnelHandler.setExecutorGroup(executor);
+					tunnelHandler.setOutboundExecutor(executor);
+					tunnelHandler.setConfig(config);
 				}
 			}
 		}
-		ch.pipeline().addLast(executor, tunnelHandler);
+		ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes), tunnelHandler);
 	}
 	
 	/**

@@ -117,7 +117,7 @@ public class Client {
 	
 	}
 	
-	static int ITERATION = 10, PORT = 8081, CONCURRENCY = 100, CYCLE = 100, MAX_THREAD = 20;
+	static int ITERATION = 10, PORT = 8093, CONCURRENCY = 100, CYCLE = 100, MAX_THREAD = 20;
 	
 	public static void main(String[] args) throws Exception {
 		//simpleTest();

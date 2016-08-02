@@ -7,43 +7,32 @@ import java.util.function.Supplier;
 
 import org.springframework.util.Assert;
 
+import com.smsnow.adaptation.loadbal.Balancer;
 import com.smsnow.adaptation.loadbal.BalancingStrategy;
 import com.smsnow.adaptation.loadbal.Target.Algorithm;
-
-class OutboundEndpoints implements BalancingStrategy<OutboundEndpoint>
+/**
+ * A thread local balancer for outbound endpoints.
+ * @author esutdal
+ *
+ */
+class OutboundEndpointsBalancer implements BalancingStrategy<OutboundEndpoint>
 {
 	private final ConcurrentMap<String, ThreadLocal<OutboundEndpoint>> targets;
-	private final Algorithm balancingAlgo;
-	private BalancingStrategy<OutboundEndpoint> balancer;
+	private final BalancingStrategy<OutboundEndpoint> balancer;
+	private Algorithm balancingAlgo;
 	/**
 	 * 
 	 * @param targets
 	 * @param tunnelInboundHandler 
 	 */
-	public OutboundEndpoints(List<OutboundEndpoint> targets, Algorithm balancingAlgo)
+	public OutboundEndpointsBalancer(List<OutboundEndpoint> targets, Algorithm balancingAlgo)
 	{
 		this.targets = new ConcurrentHashMap<>(targets.size());
-		this.balancingAlgo = balancingAlgo;
+		balancer = Balancer.getBalancer(targets, balancingAlgo);
 		init(targets);
+		this.balancingAlgo = balancingAlgo;
 	}
-	private ConcurrentMap<String, ThreadLocal<BalancingStrategy<OutboundEndpoint>>> balancers;
-	private void initBalancer()
-	{
-		switch(balancingAlgo)
-		{
-		case FASTEST:
-			break;
-		case LEASTCONNECTION:
-			break;
-		case ROUNDROBIN:
-			break;
-		case WEIGHTED:
-			break;
-		default:
-			break;
-		
-		}
-	}
+	
 	private void init(List<OutboundEndpoint> targets)
 	{
 		for(final OutboundEndpoint oe : targets)
@@ -86,7 +75,8 @@ class OutboundEndpoints implements BalancingStrategy<OutboundEndpoint>
 	}
 	@Override
 	public OutboundEndpoint getNext() {
-		// TODO Auto-generated method stub
-		return null;
+		OutboundEndpoint target = balancer.getNext();
+    	Assert.notNull(target);
+    	return get(target);
 	}
 }
