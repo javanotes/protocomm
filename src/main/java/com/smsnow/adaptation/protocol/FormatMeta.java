@@ -1,6 +1,8 @@
 package com.smsnow.adaptation.protocol;
 
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -41,7 +43,7 @@ public class FormatMeta {
 	private final Attribute attr;
 	private String constant;
 	private String fieldName;
-	private boolean isDateFld;
+	private boolean isDateFld, isStrictSetter;
 	String dateFormat;
 	private Method getter;
 	private Method setter;
@@ -57,7 +59,70 @@ public class FormatMeta {
 	public void setConstant(String constant) {
 		this.constant = constant;
 	}
-	
+	private Object checkBoundsNumeric(Object o)
+	{
+		Number n = null;
+		try {
+			n = (Number) o;
+		} catch (Exception e) {
+			throw new IllegalArgumentException(e);
+		}
+		switch(getLength())
+		{
+			case 1:
+				return n.byteValue();
+			case 2:
+				return n.shortValue();
+			case 4:
+				return n.intValue();
+			case 8:
+				return n.longValue();
+				default:
+					throw new IllegalArgumentException("Unexpected number length "+getLength()+" for field "+getFieldName());
+		}
+	}
+	private Object checkBoundsString(Object o, byte[] bytes)
+	{
+		if(isStrictSetter())
+		{
+			Assert.isTrue(bytes.length == getLength(), "Expecting length: "+getLength()+" found: "+bytes.length+" for field "+getFieldName());
+		}
+		else
+		{
+			if(bytes.length != getLength())
+			{
+				bytes = Arrays.copyOf(bytes, getLength());
+				return new String(bytes, StandardCharsets.UTF_8);
+			}
+						
+		}
+		return o;
+	}
+	/**
+	 * Checks the bound as per the meta definition. Throws exception if bounds do not match 
+	 * and {@link #isStrictSetter()} is enabled.
+	 * @param o
+	 * @return
+	 * @throws IllegalArgumentException 
+	 */
+	public Object checkBounds(Object o) throws IllegalArgumentException
+	{
+		byte[] bytes;
+		switch(getAttr())
+		{
+			case NUMERIC:
+				return checkBoundsNumeric(o);
+			case BINARY:
+				return checkBoundsNumeric(o);
+			case TEXT:
+				bytes = o.toString().getBytes(StandardCharsets.UTF_8);
+				return checkBoundsString(o, bytes);
+				
+			default:
+				return o;
+		
+		}
+	}
 	public void introspect(Class<?> protoClassTyp, Class<?>...args) {
 		if (!introspected) {
 			introspected = true;
@@ -114,5 +179,11 @@ public class FormatMeta {
 	}
 	public void setGetter(Method getter) {
 		this.getter = getter;
+	}
+	public boolean isStrictSetter() {
+		return isStrictSetter;
+	}
+	public void setStrictSetter(boolean isStrictSetter) {
+		this.isStrictSetter = isStrictSetter;
 	}
 }

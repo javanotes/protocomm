@@ -121,8 +121,8 @@ public class Client {
 	
 	public static void main(String[] args) throws Exception {
 		//simpleTest();
-		//simpleConcurrentTest();
-		runPerf();
+		simpleConcurrentTest();
+		//runPerf();
 		
 		//sendRequestCodec(10);
 		
@@ -144,7 +144,7 @@ public class Client {
 				out.flush();
 				//System.out.println("Sent request..");
 				ITOCLogin resp = codec.decode(ITOCLogin.class, in);
-				//System.out.println("Response => " + resp);
+				System.out.println("Response => " + resp);
 			}
 			
 		} finally {

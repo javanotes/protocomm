@@ -172,7 +172,7 @@ public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 				fm.setFieldName(field.getName());
 				fm.setDateFld(f.dateField());
 				fm.dateFormat = f.dateFormat();
-				
+				fm.setStrictSetter(f.strictSetter());
 				fm.introspect(protoClassTyp, field.getType());
 								
 				protoMeta.add(fm);

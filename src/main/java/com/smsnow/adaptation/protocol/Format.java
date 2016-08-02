@@ -15,4 +15,5 @@ public @interface Format {
 	String constant() default "";
 	boolean dateField() default false;
 	String dateFormat() default "";
+	boolean strictSetter() default false;
 }

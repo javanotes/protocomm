@@ -11,7 +11,11 @@ import com.smsnow.adaptation.protocol.CodecException;
 import com.smsnow.adaptation.protocol.FixedLenCodec;
 import com.smsnow.adaptation.protocol.ProtocolMeta;
 import com.smsnow.adaptation.protocol.StreamedFixedLenCodec;
-
+/**
+ * A wrapper class to make use either of streamed or buffered transport, in a configurable manner.
+ * @author esutdal
+ *
+ */
 public class ITOCCodecWrapper implements FixedLenCodec,StreamedFixedLenCodec,BufferedFixedLenCodec {
 
 	private StreamedITOCCodec str = null;
