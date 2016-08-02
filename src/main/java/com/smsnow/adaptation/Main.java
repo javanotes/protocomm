@@ -28,18 +28,17 @@ SOFTWARE.
 */
 package com.smsnow.adaptation;
 
-import org.springframework.boot.Banner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 @SpringBootApplication
-public class TNServer {
+public class Main {
 
         
   public static void main(String[] args) {
 	  new SpringApplicationBuilder()
-	    .bannerMode(Banner.Mode.OFF)
-	    .sources(TNServer.class)
+	    .sources(Main.class)
+	    //.bannerMode(org.springframework.boot.Banner.Mode.OFF)
 	    .run(args);
   }
   
