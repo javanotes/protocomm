@@ -15,6 +15,13 @@ public class CodecException extends ParseException {
 		super(msg, offset);
 		
 	}
+	private String metaName;
+	@Override
+	public String getMessage()
+	{
+		return metaName + " :: " + super.getMessage();
+		
+	}
 	/**
 	 * 
 	 * @param msg
@@ -61,6 +68,12 @@ public class CodecException extends ParseException {
 		this.type = type;
 	}
 
+	public String getMetaName() {
+		return metaName;
+	}
+	public void setMetaName(String metaName) {
+		this.metaName = metaName;
+	}
 	/**
 	 * 
 	 */

@@ -2,10 +2,11 @@ package com.smsnow.adaptation.protocol;
 
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
+
+import com.smsnow.adaptation.utils.CommonUtil;
 
 public class FormatMeta {
 	/**
@@ -59,6 +60,16 @@ public class FormatMeta {
 	public void setConstant(String constant) {
 		this.constant = constant;
 	}
+	private Object checkBoundsByteArray(Object o)
+	{
+		byte[] n = null;
+		try {
+			n = (byte[]) o;
+		} catch (Exception e) {
+			throw new IllegalArgumentException("Field => "+getFieldName(),e);
+		}
+		return CommonUtil.padBytes(n, getLength(), (byte) '0');
+	}
 	private Object checkBoundsNumeric(Object o)
 	{
 		Number n = null;
@@ -81,6 +92,8 @@ public class FormatMeta {
 					throw new IllegalArgumentException("Unexpected number length "+getLength()+" for field "+getFieldName());
 		}
 	}
+	
+	
 	private Object checkBoundsString(Object o, byte[] bytes, Charset charset, byte padChar)
 	{
 		if(isStrictSetter())
@@ -91,16 +104,7 @@ public class FormatMeta {
 		{
 			if(bytes.length != getLength())
 			{
-				int len = bytes.length;
-				bytes = Arrays.copyOf(bytes, getLength());
-				if(getLength() > len)
-				{
-					for(int i=len; i<getLength(); i++)
-					{
-						bytes[i] = padChar;
-					}
-				}
-				return new String(bytes, charset);
+				return new String(CommonUtil.padBytes(bytes, getLength(), padChar), charset);
 			}
 						
 		}
@@ -122,6 +126,10 @@ public class FormatMeta {
 			switch (getAttr()) {
 			case NUMERIC:
 				return checkBoundsNumeric(o);
+			case BINARY:
+				return checkBoundsByteArray(o);
+			case UNDEF:
+				return checkBoundsByteArray(o);
 			case TEXT:
 				bytes = o.toString().getBytes(charset);
 				return checkBoundsString(o, bytes, charset, padChar);

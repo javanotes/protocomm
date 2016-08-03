@@ -9,12 +9,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.log4j.spi.LoggerFactory;
+import org.slf4j.Logger;
 import org.springframework.util.Assert;
 
 import com.smsnow.adaptation.dto.ApplicationHeader;
 import com.smsnow.adaptation.dto.ITOCInboundHeader;
 import com.smsnow.adaptation.dto.ITOCOutboundHeader;
+import com.smsnow.adaptation.dto.ITOCRequest;
+import com.smsnow.adaptation.dto.ITOCResponse;
 import com.smsnow.adaptation.dto.ITOCTrailer;
 import com.smsnow.adaptation.protocol.AbstractLengthBasedCodec;
 import com.smsnow.adaptation.protocol.CodecException;
@@ -22,6 +27,7 @@ import com.smsnow.adaptation.protocol.CodecException.Type;
 import com.smsnow.adaptation.protocol.FormatMeta;
 import com.smsnow.adaptation.protocol.ProtocolMeta;
 import com.smsnow.adaptation.protocol.StreamedLengthBasedCodec;
+import com.smsnow.adaptation.utils.CommonUtil;
 /**
  * Encode/Decode a pojo bean class according to ITOC protocol specs.
  * @refer 800-17.0-SPECS-1 FINAL, August, 2008
@@ -39,49 +45,55 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 	public StreamedITOCCodec() {
 		this(StandardCharsets.UTF_8);
 	}
-	private static void writeAsNumeric(FormatMeta f, Object o, DataOutputStream out) throws IOException
+	private static void writeAsNumeric(FormatMeta f, Object o, DataOutputStream out, AtomicInteger count) throws IOException
 	{
 		switch(f.getLength())
 		{
 			case 1:
 				out.writeByte((byte)o);
+				count.addAndGet(f.getLength());
 				break;
 			case 2:
 				out.writeShort((short) o);
+				count.addAndGet(f.getLength());
 				break;
 			case 4:
 				out.writeInt((int) o);
+				count.addAndGet(f.getLength());
 				break;
 			case 8:
 				out.writeLong((long) o);
+				count.addAndGet(f.getLength());
 				break;
 				default:
 					throw new IOException("Unexpected byte length "+f.getLength()+" for field "+f.getFieldName());
 		}
 	}
-	private static void fillBytes(FormatMeta f, DataOutputStream out) throws IOException
+	private static void fillBytes(FormatMeta f, DataOutputStream out, AtomicInteger count) throws IOException
 	{
 		byte[] bytes = new byte[f.getLength()];
 		Arrays.fill(bytes, (byte)0);
 		out.write(bytes, 0, f.getLength());
+		count.addAndGet(f.getLength());
 	}
 	
-	private void writeAsObject(FormatMeta f, Object o, DataOutputStream out) throws CodecException, IOException
+	private void writeAsObject(FormatMeta f, Object o, DataOutputStream out, AtomicInteger count) throws CodecException, IOException
 	{
 		if (o != null) {
 			encode(o, out);
 		}
 		else
 		{
-			fillBytes(f, out);
+			fillBytes(f, out, count);
 		}
 	}
-	@Override
-	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out) throws IOException, CodecException
+	//@Override
+	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out, AtomicInteger count) throws IOException, CodecException
 	{
+		
 		if(o == null)
 		{
-			fillBytes(f, out);
+			fillBytes(f, out, count);
 			return;
 		}
 		Object o1 = f.checkBounds(o, charset);
@@ -90,29 +102,31 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 		switch(f.getAttr())
 		{
 		case APPHEADER:
-			writeAsObject(f, o1, out);
+			writeAsObject(f, o1, out, count);
 			break;
 		case BINARY:
 			out.write((byte[]) o1, 0, f.getLength());
+			count.addAndGet(f.getLength());
 			break;
 		case INHEADER:
-			writeAsObject(f, o1, out);
+			writeAsObject(f, o1, out, count);
 			break;
 		case NUMERIC:
-			writeAsNumeric(f, o1, out);
+			writeAsNumeric(f, o1, out, count);
 			break;
 		case OUTHEADER:
-			writeAsObject(f, o1, out);
+			writeAsObject(f, o1, out, count);
 			break;
 		case TEXT:
 			bytes = o1.toString().getBytes(charset);
 			out.write(bytes, 0, f.getLength());
+			count.addAndGet(f.getLength());
 			break;
 		case TRAILER:
-			writeAsObject(f, o1, out);
+			writeAsObject(f, o1, out, count);
 			break;
 		default:
-			fillBytes(f, out);
+			fillBytes(f, out, count);
 			break;
 			
 		
@@ -218,7 +232,7 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 			
 			try {
 				readBytesAndSet(tObj, f, in);
-			} catch (IOException e1) {
+			} catch (Exception e1) {
 				throw new CodecException(off, e1, Type.IO_ERR);
 			}
 			
@@ -228,7 +242,7 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 	}
 	
 	
-	private <T> void write(FormatMeta f, T protoClass, DataOutputStream out) throws ReflectiveOperationException, IOException, CodecException
+	private <T> void write(FormatMeta f, T protoClass, DataOutputStream out, AtomicInteger count) throws ReflectiveOperationException, IOException, CodecException
 	{
 		Object o = f.getGetter().invoke(protoClass);
 		if(o instanceof Date)
@@ -237,12 +251,13 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 		}
 		
 		try {
-			writeBytes(f, o, out);
+			writeBytes(f, o, out, count);
 		} catch (IllegalArgumentException e) {
 			throw new ReflectiveOperationException(e);
 		}
 
 	}
+	private static final Logger log = org.slf4j.LoggerFactory.getLogger(StreamedITOCCodec.class);
 	
 	/* (non-Javadoc)
 	 * @see com.smsnow.protocol.ICodec#encode(T, java.io.DataOutputStream)
@@ -252,7 +267,27 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 	{
 		Assert.notNull(protoClass, "Null instance");
 		ProtocolMeta meta = getMeta(protoClass.getClass());
-		encode(protoClass, meta, out);
+		if(protoClass instanceof ITOCRequest)
+		{
+			ITOCRequest req = (ITOCRequest) protoClass;
+			if(req.getMVSInboundITOCHeader() == null)
+			{
+				throw new CodecException("MVSInboundITOCHeader not set", -1);
+			}
+			req.getMVSInboundITOCHeader().setTotalMessageLenLLLL(CommonUtil.intToBytes(meta.getSize()));
+		}
+		else if(protoClass instanceof ITOCResponse)
+		{
+			ITOCResponse req = (ITOCResponse) protoClass;
+			if(req.getMVSOutboundITOCHeader() == null)
+			{
+				throw new CodecException("MVSOutboundITOCHeader not set", -1);
+			}
+			req.getMVSOutboundITOCHeader().setTotalMessageLenLLLL(CommonUtil.intToBytes(meta.getSize()));
+		}
+		AtomicInteger c = new AtomicInteger();
+		encode(protoClass, meta, out, c);
+		log.debug(protoClass.getClass()+" Bytes written:: "+c.get());
 		
 	}
 		
@@ -268,21 +303,20 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 	}
 	
 	@Override
-	public <T> void encode(T protoClass, ProtocolMeta metaData, DataOutputStream out) throws CodecException {
+	public <T> void encode(T protoClass, ProtocolMeta metaData, DataOutputStream out, AtomicInteger count) throws CodecException {
 		try {
 			Assert.notNull(metaData);
 			validate(metaData, protoClass.getClass());
 		} catch (Exception e2) {
 			throw new CodecException(e2, Type.META_ERR);
 		}
-		
 		for(Entry<Integer, FormatMeta> e : metaData.getFormats().entrySet())
 		{
 			int off = e.getKey();
 			FormatMeta f = e.getValue();
 			
 			try {
-				write(f, protoClass, out);
+				write(f, protoClass, out, count);
 			} catch (ReflectiveOperationException e1) {
 				throw new CodecException(metaData.getName(), off, e1, Type.BEAN_ERR);
 			} catch (IOException e1) {
@@ -311,10 +345,18 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 			}
 			return read(protoClassType, in, metaData);
 		} catch (CodecException e) {
+			e.setMetaName(metaData.getName());
 			throw e;
 		} catch (ReflectiveOperationException e) {
-			throw new CodecException(e, Type.BEAN_ERR);
+			CodecException ce = new CodecException(e, Type.BEAN_ERR);
+			ce.setMetaName(metaData.getName());
+			throw ce;
 		}
+	}
+	@Override
+	public <T> void encode(T protoClass, ProtocolMeta metaData, DataOutputStream out) throws CodecException {
+		// TODO Auto-generated method stub
+		
 	}
 	
 	

@@ -1,4 +1,4 @@
-package com.reactiva.protoserver;
+package com.smsnow.perf;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -11,6 +11,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.slf4j.LoggerFactory;
+
+import com.smsnow.adaptation.dto.ApplicationHeader;
+import com.smsnow.adaptation.dto.ITOCInboundHeader;
+import com.smsnow.adaptation.dto.ITOCTrailer;
 import com.smsnow.adaptation.protocol.CodecException;
 import com.smsnow.adaptation.protocol.itoc.StreamedITOCCodec;
 
@@ -120,8 +125,8 @@ public class Client {
 	
 	public static void main(String[] args) throws Exception {
 		//simpleTest();
-		//simpleConcurrentTest();
-		runPerf();
+		simpleConcurrentTest();
+		//runPerf();
 		
 		//sendRequestCodec(100);
 		
@@ -137,7 +142,9 @@ public class Client {
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
 			DataInputStream in = new DataInputStream(s.getInputStream());
 				
-			
+			login.setMVSInboundITOCHeader(new ITOCInboundHeader());
+			login.setApplicationHeader(new ApplicationHeader());
+			login.setITOCTrailer(new ITOCTrailer());
 			for (int i = 0; i < n; i++) {
 				codec.encode(login, out);
 				out.flush();

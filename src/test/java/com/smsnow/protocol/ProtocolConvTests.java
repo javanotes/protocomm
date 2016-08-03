@@ -1,4 +1,4 @@
-package com.reactiva.protoserver;
+package com.smsnow.protocol;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,11 +14,11 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.smsnow.adaptation.dto.ApplicationHeader;
 import com.smsnow.adaptation.protocol.CodecException;
-import com.smsnow.adaptation.protocol.Config;
+import com.smsnow.adaptation.protocol.ProtoConfig;
 import com.smsnow.adaptation.protocol.itoc.StreamedITOCCodec;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {Config.class})
+@SpringApplicationConfiguration(classes = {ProtoConfig.class})
 public class ProtocolConvTests {
 
 	@Autowired

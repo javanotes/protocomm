@@ -40,5 +40,7 @@ public class ITOCResponse implements Serializable {
 	}
 
 	public ITOCResponse() {
+		applicationHeader = new ApplicationHeader();
+		mVSOutboundITOCHeader = new ITOCOutboundHeader();
 	}
 }

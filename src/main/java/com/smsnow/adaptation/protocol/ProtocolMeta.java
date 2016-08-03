@@ -22,6 +22,11 @@ public class ProtocolMeta {
 	public String toString() {
 		return name+" [formats=" + formats + "]";
 	}
+	private int size;
+	public int getSize() {
+		validate();
+		return size;
+	}
 	private void setSize(int size) {
 	}
 	private volatile boolean validated = false;
@@ -38,7 +43,8 @@ public class ProtocolMeta {
 								+". Expected "+(fm.offset - off)+", but found "+len);
 						off = fm.offset;
 						len = fm.getLength();
-
+						
+						size += len;
 					}
 					validated = true;
 				}

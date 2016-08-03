@@ -22,14 +22,15 @@ import com.smsnow.adaptation.server.pipe.ResponseConvertorHandler;
 import com.smsnow.adaptation.server.pipe.TerminalHandler;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.util.concurrent.DefaultEventExecutor;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -72,9 +73,18 @@ class TCPConnector implements Runnable{
 		 * assuming the actual message size would be much lesser than that.
 		 * TODO: make LengthFieldBasedFrameDecoder configurable?
 		 */
-		//ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes, Math.negateExact(config.protoLenBytes), 0));
+		ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes, Math.negateExact(config.protoLenBytes), 0){
+			protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception
+			{
+				log.debug("Start decoding");
+				Object o = super.decode(ctx, in);
+				log.debug("End decoding");
+				return o;
+			}
+		});
 		
-		ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes));
+		//ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes));
+		
 		ch.pipeline().addLast(executor, new RequestConvertorHandler(codecHandler, requestHandler, config.useByteBuf));
 		ch.pipeline().addLast(concExecutor, processor);
 		ch.pipeline().addLast(executor, encoder);

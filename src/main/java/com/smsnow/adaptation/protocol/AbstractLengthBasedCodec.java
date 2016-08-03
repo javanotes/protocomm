@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -195,7 +196,7 @@ public abstract class AbstractLengthBasedCodec implements LengthBasedCodec {
 	 * @throws IOException
 	 * @throws CodecException 
 	 */
-	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out) throws IOException, CodecException
+	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out, AtomicInteger count) throws IOException, CodecException
 	{
 		throw new IOException(new UnsupportedOperationException("Implementation to be provided by subclass"));
 	}
@@ -233,5 +234,10 @@ public abstract class AbstractLengthBasedCodec implements LengthBasedCodec {
 	 */
 	protected Object readBytes(FormatMeta f, ByteBuffer in) throws IOException {
 		throw new IOException(new UnsupportedOperationException("Implementation to be provided by subclass"));
+	}
+	public <T> void encode(T protoClass, ProtocolMeta metaData, DataOutputStream out, AtomicInteger count)
+			throws CodecException {
+		// TODO Auto-generated method stub
+		
 	}
 }

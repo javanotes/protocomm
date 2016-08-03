@@ -62,7 +62,7 @@ public class ITOCInboundHeader implements Serializable {
 	private String rACFUserID = "";
 	@Format(attribute = Attribute.TEXT, offset = 92, length = 8, constant = "")
 	private String tPIPEName = "";
-	@Format(attribute = Attribute.TEXT, offset = 100, length = 4, constant = "")
+	@Format(attribute = Attribute.TEXT, offset = 100, length = 8, constant = "")
 	private String sendSequenceNumber = "";
 	@Format(attribute = Attribute.TEXT, offset = 85, length = 1, constant = "")
 	private String messageType = "";

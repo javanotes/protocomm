@@ -3,7 +3,7 @@
 412 8 Text UserLogonID
 420 4 trailer ITOCTrailerRecord
 */
-package com.reactiva.protoserver;
+package com.smsnow.protocol;
 
 import com.smsnow.adaptation.protocol.Protocol;
 
@@ -40,5 +40,6 @@ public class LogoffRequest extends ITOCRequest implements Serializable {
 	}
 
 	public LogoffRequest() {
+		super();
 	}
 }

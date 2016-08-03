@@ -4,7 +4,7 @@
 466 1 Text LogoffStatus
 467 4 trailer ITOCTrailerRecord
 */
-package com.reactiva.protoserver;
+package com.smsnow.protocol;
 
 import com.smsnow.adaptation.protocol.Protocol;
 
@@ -50,5 +50,6 @@ public class LogoffResponse extends ITOCResponse implements Serializable {
 	}
 
 	public LogoffResponse() {
+		super();
 	}
 }

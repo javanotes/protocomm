@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import com.smsnow.adaptation.protocol.itoc.StreamedITOCCodec;
 
 @Configuration
-public class Config {
+public class ProtoConfig {
 	@Bean
 	public StreamedITOCCodec streamCodec()
 	{
