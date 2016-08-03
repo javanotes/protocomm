@@ -7,6 +7,10 @@ import java.util.Scanner;
 
 import org.springframework.util.StringUtils;
 
+import com.smsnow.adaptation.dto.common.ApplicationHeader;
+import com.smsnow.adaptation.dto.common.ITOCInboundHeader;
+import com.smsnow.adaptation.dto.common.ITOCOutboundHeader;
+import com.smsnow.adaptation.dto.common.ITOCTrailer;
 import com.smsnow.adaptation.protocol.Attribute;
 
 public class FormatParser {
@@ -75,6 +79,22 @@ public class FormatParser {
 			else if(Attribute.BINARY.name().equals(attr))
 			{
 				return numeric(f);
+			}
+			else if(Attribute.APPHEADER.name().equals(attr))
+			{
+				return new JField(f.getContent(), ApplicationHeader.class);
+			}
+			else if(Attribute.INHEADER.name().equals(attr))
+			{
+				return new JField(f.getContent(), ITOCInboundHeader.class);
+			}
+			else if(Attribute.OUTHEADER.name().equals(attr))
+			{
+				return new JField(f.getContent(), ITOCOutboundHeader.class);
+			}
+			else if(Attribute.TRAILER.name().equals(attr))
+			{
+				return new JField(f.getContent(), ITOCTrailer.class);
 			}
 			else
 			{

@@ -9,7 +9,6 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 
 import com.smsnow.adaptation.protocol.CodecException;
 import com.smsnow.adaptation.protocol.itoc.ITOCCodecWrapper;
@@ -76,9 +75,10 @@ public class RequestConvertorHandler extends ByteToMessageDecoder {
 	@Override
 	protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
 		log.debug("Begin request conversion");
-		int size = codec.sizeof(rh.requestMapping());
+		
+		/*int size = codec.sizeof(rh.requestMapping());
 		int len = in.readableBytes()-4;
-		Assert.isTrue(len == size, "Expecting a message of size "+size+". Found "+len);
+		Assert.isTrue(len == size, "Expecting a message of size "+size+". Found "+len);*/
 		
     	out.add(buffCodec ? readAsBuffered(in) : readAsStreamed(in));
     	

@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.smsnow.adaptation.protocol.CodecException;
 import com.smsnow.adaptation.protocol.itoc.StreamedITOCCodec;
-import com.smsnow.adaptation.server.dto.ITOCLogin;
 
 public class Client {
 
@@ -69,11 +68,11 @@ public class Client {
 		final AtomicLong sessStats = new AtomicLong();
 		
 		ExecutorService ex = Executors.newFixedThreadPool(MAX_THREAD);
-		try {
+		/*try {
 			System.out.println("Message bytes len => "+codec.sizeof(login.getClass()));
 		} catch (CodecException e1) {
 			
-		}
+		}*/
 		System.out.println("Client.main() #### START");
 		long start = System.currentTimeMillis();
 		for (int i = 0; i < CONCURRENCY; i++) {

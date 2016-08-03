@@ -1,10 +1,9 @@
 package com.smsnow.adaptation.protocol;
 
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import org.springframework.util.Assert;
-
-import java.util.Map.Entry;
 
 public class ProtocolMeta {
 
@@ -18,13 +17,11 @@ public class ProtocolMeta {
 	{
 		getFormats().put(fm.offset, fm);
 	}
-	public int getSize() {
-		return size;
-	}
+	
 	private void setSize(int size) {
-		this.size = size;
 	}
 	private volatile boolean validated = false;
+	
 	public void validate() {
 		if (!validated) {
 			synchronized (this) {
@@ -33,10 +30,10 @@ public class ProtocolMeta {
 					setSize(len);
 					for (Entry<Integer, FormatMeta> e : getFormats().entrySet()) {
 						FormatMeta fm = e.getValue();
-						Assert.isTrue(fm.offset == (off + len), name + " => Incorrect length at offset:" + off);
+						Assert.isTrue(fm.offset == (off + len), getName() + " => Incorrect length specified at offset:" + off
+								+". Expected "+(fm.offset - off)+", but found "+len);
 						off = fm.offset;
 						len = fm.getLength();
-						size += len;
 
 					}
 					validated = true;
@@ -48,5 +45,7 @@ public class ProtocolMeta {
 	public TreeMap<Integer, FormatMeta> getFormats() {
 		return formats;
 	}
-	private int size;
+	public String getName() {
+		return name;
+	}
 }

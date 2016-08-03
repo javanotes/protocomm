@@ -52,7 +52,7 @@ public class Generator {
 			JFormat fmt = e.getValue();
 			Attribute attrib;
 			try {
-				attrib = Attribute.valueOf((fmt.attribute+"").toUpperCase());
+				attrib = Attribute.valueOf(fmt.attribute);
 			} catch (Exception e1) {
 				attrib = Attribute.UNDEF;
 			}

@@ -17,14 +17,15 @@ import com.smsnow.adaptation.protocol.CodecException.Type;
 import com.smsnow.adaptation.protocol.FormatMeta;
 import com.smsnow.adaptation.protocol.ProtocolMeta;
 /**
- * Encode/Decode a pojo bean class according to ITOC protocol specs.
- * @refer 800-17.0-SPECS-1 FINAL, August, 2008
+ * @deprecated Not compliant with ITOC
+ *
  * @author esutdal
  *
  */
 public class BufferedITOCCodec extends AbstractFixedLenCodec implements BufferedFixedLenCodec {
 	final Charset charset;
 	public BufferedITOCCodec(Charset charset) {
+		System.err.println("* WARNING: BufferedITOCCodec not compliant *");
 		this.charset = charset;
 	}
 	/**
@@ -148,12 +149,7 @@ public class BufferedITOCCodec extends AbstractFixedLenCodec implements Buffered
 		} catch (InstantiationException | IllegalAccessException e2) {
 			throw e2;
 		}
-		try {
-			int len = in.getInt();
-			Assert.isTrue(meta.getSize() == len, "Expecting stream length: "+meta.getSize()+" found: "+len);
-		} catch (Exception e2) {
-			throw new CodecException(e2, Type.IO_ERR);
-		}
+		
 		for(Entry<Integer, FormatMeta> e : meta.getFormats().entrySet())
 		{
 			int off = e.getKey();
@@ -221,11 +217,7 @@ public class BufferedITOCCodec extends AbstractFixedLenCodec implements Buffered
 		} catch (Exception e2) {
 			throw new CodecException(e2, Type.META_ERR);
 		}
-		try {
-			out.putInt(metaData.getSize());
-		} catch (Exception e2) {
-			throw new CodecException(e2, Type.IO_ERR);
-		}
+		
 		for(Entry<Integer, FormatMeta> e : metaData.getFormats().entrySet())
 		{
 			int off = e.getKey();
@@ -250,10 +242,11 @@ public class BufferedITOCCodec extends AbstractFixedLenCodec implements Buffered
 	}
 	@Override
 	public <T> ByteBuffer encode(T protoClass, ProtocolMeta metaData) throws CodecException {
-		ByteBuffer buf = ByteBuffer.allocate(metaData.getSize());
+		/*ByteBuffer buf = ByteBuffer.allocate(metaData.getSize());
 		encode(protoClass, metaData, buf);
 		buf.flip();
-		return buf;
+		return buf;*/
+		throw new UnsupportedOperationException();
 	}
 	
 	@Override
@@ -272,15 +265,6 @@ public class BufferedITOCCodec extends AbstractFixedLenCodec implements Buffered
 			throw new CodecException(e, Type.BEAN_ERR);
 		}
 	}
-	@Override
-	public <T> int sizeof(Class<T> protoClassType) throws CodecException {
-		ProtocolMeta proto = null;
-		try {
-			proto = getMeta(protoClassType);
-			return proto.getSize();
-		} catch (CodecException e) {
-			throw e;
-		}
-	}
+	
 	
 }

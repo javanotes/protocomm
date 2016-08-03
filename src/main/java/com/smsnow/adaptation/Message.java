@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package com.smsnow.adaptation.server.dto;
+package com.smsnow.adaptation;
 
 import java.nio.charset.StandardCharsets;
 /**

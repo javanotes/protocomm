@@ -164,8 +164,6 @@ public class Config {
 	@DependsOn("codec")
 	public RequestHandler handler() throws Exception {
 		RequestHandler rh = (RequestHandler) Class.forName(requestHandler).newInstance();
-		codec().sizeof(rh.requestMapping());
-		codec().sizeof(rh.responseMapping());
 		rh.init();
 		return rh;
 	}

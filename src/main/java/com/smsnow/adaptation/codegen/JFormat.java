@@ -36,7 +36,7 @@ public class JFormat {
 		super();
 		this.offset = offset;
 		this.length = length;
-		this.attribute = attribute;
+		this.attribute = attribute.toUpperCase();
 		this.content = content;
 	}
 	int offset, length;

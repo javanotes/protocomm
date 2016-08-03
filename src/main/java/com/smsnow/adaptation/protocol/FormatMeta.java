@@ -107,9 +107,9 @@ public class FormatMeta {
 	 */
 	public Object checkBounds(Object o) throws IllegalArgumentException
 	{
-		byte[] bytes;
-		switch(getAttr())
-		{
+		if (o != null) {
+			byte[] bytes;
+			switch (getAttr()) {
 			case NUMERIC:
 				return checkBoundsNumeric(o);
 			case BINARY:
@@ -117,11 +117,12 @@ public class FormatMeta {
 			case TEXT:
 				bytes = o.toString().getBytes(StandardCharsets.UTF_8);
 				return checkBoundsString(o, bytes);
-				
 			default:
 				return o;
-		
+
+			}
 		}
+		return o;
 	}
 	public void introspect(Class<?> protoClassTyp, Class<?>...args) {
 		if (!introspected) {

@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
-import com.smsnow.adaptation.protocol.FixedLenCodec;
+import com.smsnow.adaptation.protocol.LengthBasedCodec;
 import com.smsnow.adaptation.protocol.itoc.ITOCCodecWrapper;
 import com.smsnow.adaptation.server.Config.HostAndPort;
 import com.smsnow.adaptation.server.gw.OutboundEndpoint;
@@ -42,7 +42,7 @@ import io.netty.util.concurrent.RejectedExecutionHandler;
 class TCPConnector implements Runnable{
 	private EventExecutorGroup executor, concExecutor;
 	private ITOCCodecWrapper codecHandler;
-	public FixedLenCodec getCodecHandler() {
+	public LengthBasedCodec getCodecHandler() {
 		return codecHandler;
 	}
 	public void setCodecHandler(ITOCCodecWrapper codecHandler) {

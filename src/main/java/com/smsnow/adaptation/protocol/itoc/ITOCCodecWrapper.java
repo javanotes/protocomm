@@ -9,7 +9,7 @@ import org.springframework.util.Assert;
 
 import com.smsnow.adaptation.protocol.BufferedFixedLenCodec;
 import com.smsnow.adaptation.protocol.CodecException;
-import com.smsnow.adaptation.protocol.FixedLenCodec;
+import com.smsnow.adaptation.protocol.LengthBasedCodec;
 import com.smsnow.adaptation.protocol.ProtocolMeta;
 import com.smsnow.adaptation.protocol.StreamedFixedLenCodec;
 /**
@@ -17,11 +17,11 @@ import com.smsnow.adaptation.protocol.StreamedFixedLenCodec;
  * @author esutdal
  *
  */
-public class ITOCCodecWrapper implements FixedLenCodec,StreamedFixedLenCodec,BufferedFixedLenCodec {
+public class ITOCCodecWrapper implements LengthBasedCodec,StreamedFixedLenCodec,BufferedFixedLenCodec {
 
 	private StreamedITOCCodec str = null;
 	private BufferedITOCCodec buff = null;
-	private FixedLenCodec fl;
+	private LengthBasedCodec fl;
 	/**
 	 * 
 	 * @param useByteBuf
@@ -36,10 +36,7 @@ public class ITOCCodecWrapper implements FixedLenCodec,StreamedFixedLenCodec,Buf
 			fl = str;
 		}
 	}
-	@Override
-	public <T> int sizeof(Class<T> protoClassType) throws CodecException {
-		return fl.sizeof(protoClassType);
-	}
+	
 	@Override
 	public <T> ByteBuffer encode(T protoClass) throws CodecException {
 		Assert.notNull(buff, "Not a buffered codec");

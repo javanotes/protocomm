@@ -27,11 +27,11 @@ import org.springframework.util.ReflectionUtils.FieldFilter;
 
 import com.smsnow.adaptation.protocol.CodecException.Type;
 /**
- * Abstract implementation of a {@linkplain FixedLenCodec}.
+ * Abstract implementation of a {@linkplain LengthBasedCodec}.
  * @author esutdal
  *
  */
-public abstract class AbstractFixedLenCodec implements FixedLenCodec {
+public abstract class AbstractFixedLenCodec implements LengthBasedCodec {
 	/**
 	 * 
 	 * @param basePkg
@@ -193,8 +193,9 @@ public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 	 * @param o
 	 * @param out
 	 * @throws IOException
+	 * @throws CodecException 
 	 */
-	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out) throws IOException
+	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out) throws IOException, CodecException
 	{
 		throw new IOException(new UnsupportedOperationException("Implementation to be provided by subclass"));
 	}
@@ -205,8 +206,9 @@ public abstract class AbstractFixedLenCodec implements FixedLenCodec {
 	 * @param in
 	 * @return
 	 * @throws IOException
+	 * @throws CodecException 
 	 */
-	protected Object readBytes(FormatMeta f, DataInputStream in) throws IOException
+	protected Object readBytes(FormatMeta f, DataInputStream in) throws IOException, CodecException
 	{
 		throw new IOException(new UnsupportedOperationException("Implementation to be provided by subclass"));
 	}

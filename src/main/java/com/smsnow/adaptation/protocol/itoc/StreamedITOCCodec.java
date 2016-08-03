@@ -1,5 +1,6 @@
 package com.smsnow.adaptation.protocol.itoc;
 
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -11,6 +12,10 @@ import java.util.Map.Entry;
 
 import org.springframework.util.Assert;
 
+import com.smsnow.adaptation.dto.common.ApplicationHeader;
+import com.smsnow.adaptation.dto.common.ITOCInboundHeader;
+import com.smsnow.adaptation.dto.common.ITOCOutboundHeader;
+import com.smsnow.adaptation.dto.common.ITOCTrailer;
 import com.smsnow.adaptation.protocol.AbstractFixedLenCodec;
 import com.smsnow.adaptation.protocol.CodecException;
 import com.smsnow.adaptation.protocol.CodecException.Type;
@@ -51,32 +56,65 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 				out.writeLong((long) o);
 				break;
 				default:
-					throw new IOException("Unexpected number length "+f.getLength()+" for field "+f.getFieldName());
+					throw new IOException("Unexpected byte length "+f.getLength()+" for field "+f.getFieldName());
 		}
 	}
-	
-	@Override
-	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out) throws IOException
+	private static void fillBytes(FormatMeta f, DataOutputStream out) throws IOException
 	{
+		byte[] bytes = new byte[f.getLength()];
+		Arrays.fill(bytes, (byte)0);
+		out.write(bytes, 0, f.getLength());
+	}
+	
+	private void writeAsObject(FormatMeta f, Object o, DataOutputStream out) throws CodecException, IOException
+	{
+		if (o != null) {
+			encode(o, out);
+		}
+		else
+		{
+			fillBytes(f, out);
+		}
+	}
+	@Override
+	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out) throws IOException, CodecException
+	{
+		if(o == null)
+		{
+			fillBytes(f, out);
+			return;
+		}
 		f.checkBounds(o);
 		byte[] bytes;
+			
 		switch(f.getAttr())
 		{
-			case NUMERIC:
-				writeAsNumeric(f, o, out);
-				break;
-			case BINARY:
-				writeAsNumeric(f, o, out);
-				break;
-			case TEXT:
-				bytes = o.toString().getBytes(charset);
-				out.write(bytes, 0, f.getLength());
-				break;
-			default:
-				bytes = new byte[f.getLength()];
-				Arrays.fill(bytes, (byte)0);
-				out.write(bytes, 0, f.getLength());
-				break;
+		case APPHEADER:
+			writeAsObject(f, o, out);
+			break;
+		case BINARY:
+			writeAsNumeric(f, o, out);
+			break;
+		case INHEADER:
+			writeAsObject(f, o, out);
+			break;
+		case NUMERIC:
+			writeAsNumeric(f, o, out);
+			break;
+		case OUTHEADER:
+			writeAsObject(f, o, out);
+			break;
+		case TEXT:
+			bytes = o.toString().getBytes(charset);
+			out.write(bytes, 0, f.getLength());
+			break;
+		case TRAILER:
+			writeAsObject(f, o, out);
+			break;
+		default:
+			fillBytes(f, out);
+			break;
+			
 		
 		}
 	}
@@ -94,30 +132,49 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 			case 8:
 				return in.readLong();
 				default:
-					throw new IOException("Unexpected number length "+f.getLength()+" for field "+f.getFieldName());
+					throw new IOException("Unexpected byte length "+f.getLength()+" for field "+f.getFieldName());
 		}
 	}
 	
 	@Override
-	protected Object readBytes(FormatMeta f, DataInputStream in) throws IOException
+	protected Object readBytes(FormatMeta f, DataInputStream in) throws IOException, CodecException
 	{
 		Object ret = null;
 		byte[] bytes;
+	
+		
 		switch(f.getAttr())
 		{
-			case NUMERIC:
-				ret = readAsNumeric(f, in);
-				break;
-			case BINARY:
-				ret = readAsNumeric(f, in);
-				break;
-			case TEXT:
-				bytes = readFully(in, f.getLength());
-				ret = new String(bytes, charset);
-				break;
-			default:
-				bytes = readFully(in, f.getLength());
-				break;
+		case APPHEADER:
+			bytes = readFully(in, f.getLength());
+			ret = decode(ApplicationHeader.class, new DataInputStream(new ByteArrayInputStream(bytes)));
+			break;
+		case BINARY:
+			ret = readAsNumeric(f, in);
+			break;
+		case INHEADER:
+			bytes = readFully(in, f.getLength());
+			ret = decode(ITOCInboundHeader.class, new DataInputStream(new ByteArrayInputStream(bytes)));
+			break;
+		case NUMERIC:
+			ret = readAsNumeric(f, in);
+			break;
+		case OUTHEADER:
+			bytes = readFully(in, f.getLength());
+			ret = decode(ITOCOutboundHeader.class, new DataInputStream(new ByteArrayInputStream(bytes)));
+			break;
+		case TEXT:
+			bytes = readFully(in, f.getLength());
+			ret = new String(bytes, charset);
+			break;
+		case TRAILER:
+			bytes = readFully(in, f.getLength());
+			ret = decode(ITOCTrailer.class, new DataInputStream(new ByteArrayInputStream(bytes)));
+			break;
+		default:
+			bytes = readFully(in, f.getLength());
+			break;
+			
 		
 		}
 		return ret;
@@ -138,7 +195,7 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 		return b;
 	}
 	
-	private void readBytesAndSet(Object p, FormatMeta f, DataInputStream in) throws ReflectiveOperationException, IOException
+	private void readBytesAndSet(Object p, FormatMeta f, DataInputStream in) throws ReflectiveOperationException, IOException, CodecException
 	{
 		Object o = readBytes(f, in);
 		if(f.isDateFld())
@@ -156,12 +213,7 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 		} catch (InstantiationException | IllegalAccessException e2) {
 			throw e2;
 		}
-		try {
-			int len = in.readInt();
-			Assert.isTrue(meta.getSize() == len, "Expecting stream length: "+meta.getSize()+" found: "+len);
-		} catch (Exception e2) {
-			throw new CodecException(e2, Type.IO_ERR);
-		}
+		
 		for(Entry<Integer, FormatMeta> e : meta.getFormats().entrySet())
 		{
 			int off = e.getKey();
@@ -179,7 +231,7 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 	}
 	
 	
-	private <T> void write(FormatMeta f, T protoClass, DataOutputStream out) throws ReflectiveOperationException, IOException
+	private <T> void write(FormatMeta f, T protoClass, DataOutputStream out) throws ReflectiveOperationException, IOException, CodecException
 	{
 		Object o = f.getGetter().invoke(protoClass);
 		if(o instanceof Date)
@@ -201,6 +253,7 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 	@Override
 	public <T> void encode(T protoClass, DataOutputStream out) throws CodecException
 	{
+		Assert.notNull(protoClass, "Null instance");
 		ProtocolMeta meta = getMeta(protoClass.getClass());
 		encode(protoClass, meta, out);
 		
@@ -225,12 +278,7 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 		} catch (Exception e2) {
 			throw new CodecException(e2, Type.META_ERR);
 		}
-		try {
-			out.writeInt(metaData.getSize());
-			out.flush();
-		} catch (IOException e2) {
-			throw new CodecException(e2, Type.IO_ERR);
-		}
+		
 		for(Entry<Integer, FormatMeta> e : metaData.getFormats().entrySet())
 		{
 			int off = e.getKey();
@@ -272,15 +320,5 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 		}
 	}
 	
-	@Override
-	public <T> int sizeof(Class<T> protoClassType) throws CodecException {
-		ProtocolMeta proto = null;
-		try {
-			proto = getMeta(protoClassType);
-			return proto.getSize();
-		} catch (CodecException e) {
-			throw e;
-		}
-	}
 	
 }

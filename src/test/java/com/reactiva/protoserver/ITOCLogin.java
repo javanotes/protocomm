@@ -4,7 +4,7 @@
 154 304 * ApplicationHeader
 458 8 Text UserLogonID
 */
-package com.smsnow.adaptation.server.dto;
+package com.reactiva.protoserver;
 
 import java.io.Serializable;
 
