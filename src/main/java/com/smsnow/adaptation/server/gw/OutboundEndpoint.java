@@ -169,7 +169,9 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     private class ChannelReadyListener implements ChannelFutureListener
     {
     	
-		public ChannelReadyListener() {
+		private TunnelOutboundHandler tunnelOutHdlr;
+		public ChannelReadyListener(TunnelOutboundHandler tunnelOutHdlr) {
+			this.tunnelOutHdlr = tunnelOutHdlr;
 		}
 
 		@Override
@@ -177,6 +179,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 			getTunnelInHandler().endReconnectionAttempt(OutboundEndpoint.this.toString());
 			if (future.isSuccess()) {
 				synchronized (channelState) {
+					setTunnelOutHandler(this.tunnelOutHdlr);
 					channelState.compareAndSet(OPEN, READY);
 					channelState.notifyAll();
 					/*if (read) {
@@ -207,13 +210,14 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 	/**
      * Associate a channel to this instance.
      * @param f
+	 * @param tunnelOutHdlr 
      * @param b 
      * @param inboundChannel 
      */
-    synchronized void associate(ChannelFuture f)
+    synchronized void associate(ChannelFuture f, TunnelOutboundHandler tunnelOutHdlr)
     {
     	close0();
-    	f.addListener(new ChannelReadyListener());
+    	f.addListener(new ChannelReadyListener(tunnelOutHdlr));
     	outboundChannel = f.channel();
     }
     /**
@@ -258,7 +262,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     	Channel ch = null;//acquirePooledChannel();
     	return ch == null ? new PooledOrUnpooled(outboundChannel, false) : new PooledOrUnpooled(ch, true);
     }
-    private final Object outHandlerMutex = new Object();
+    
     /**
      * Write to this endpoint.
      * @param clientCtx
@@ -267,22 +271,21 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
     void write(final ChannelHandlerContext clientCtx, Object msg)
     {
     	log.debug("FORWARD TUNNEL WRITE => client 2 server");
-    	final PooledOrUnpooled pooled = getOutChannel();
-    	log.debug("Found target instance => "+pooled);
-    	pooled.channel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
+    	final PooledOrUnpooled outChannel = getOutChannel();
+    	log.debug("Found target instance => "+outChannel);
+    	tunnelOutHandler.setClientChannel(clientCtx.channel());
+    	outChannel.channel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
 			
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception {
 				log.debug("Making reverse tunnel ready");
-				if(pooled.pooled)
+				if(outChannel.pooled)
 				{
-					log.debug("writeoperationComplete::inEventLoop ? "+pooled.channel.eventLoop().inEventLoop());
-					pooledChannels.release(pooled.channel);
+					log.debug("writeoperationComplete::inEventLoop ? "+outChannel.channel.eventLoop().inEventLoop());
+					pooledChannels.release(outChannel.channel);
 				}
-				synchronized (outHandlerMutex) {
-					tunnelOutHandler.setClientChannel(clientCtx.channel());
-					clientCtx.read();
-				}
+				
+				clientCtx.read();
 			}
 		});
     }
@@ -338,9 +341,7 @@ public class OutboundEndpoint implements Closeable, Target, Endpoint, ChannelPoo
 	 */
 	@Override
 	public void setTunnelOutHandler(TunnelOutboundHandler tunnelOutHandler) {
-		synchronized (outHandlerMutex) {
-			this.tunnelOutHandler = tunnelOutHandler;
-		}
+		this.tunnelOutHandler = tunnelOutHandler;
 	}
 
 	public boolean isUnInitiated() {

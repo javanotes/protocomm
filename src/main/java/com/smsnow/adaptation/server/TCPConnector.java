@@ -234,32 +234,24 @@ class TCPConnector implements Runnable{
 	private void initExecThreads()
 	{
 		executor = new DefaultEventExecutorGroup(config.eventThreadCount, new ThreadFactory() {
-			int n = 0;
+			int n = 1;
 			@Override
 			public Thread newThread(Runnable arg0) {
-				Thread t = new Thread(arg0, "xcomm-execgrp-"+(n++));
+				Thread t = new Thread(arg0, "xcomm-event-"+(n++));
 				return t;
 			}
-		}) 
-		{
-			@Override
-			protected EventExecutor newChild(Executor executor, Object... args) throws Exception {
-								
-				return new DefaultEventExecutor(this, executor, (Integer) args[0], (RejectedExecutionHandler) args[1]);
-			}
-		};
+		});
 		
 		concExecutor = new DefaultEventExecutorGroup(1, new ThreadFactory() {
 			@Override
 			public Thread newThread(Runnable arg0) {
-				Thread t = new Thread(arg0, "xcomm-concurexecgrp");
+				Thread t = new Thread(arg0, "xcomm-execgrp");
 				return t;
 			}
 		}) 
 		{
 			@Override
 			protected EventExecutor newChild(Executor executor, Object... args) throws Exception {
-				//ConcurrentEventExecutor not working consistently
 				return new ConcurrentEventExecutor(this, executor, (Integer) args[0],
 						(RejectedExecutionHandler) args[1], execThreads);
 				
@@ -310,15 +302,13 @@ class TCPConnector implements Runnable{
 	 * 
 	 */
 	public void stopServer() {
-		try {
-			future.channel().closeFuture().sync();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-		eventLoop.shutdownGracefully();
-		bossLoop.shutdownGracefully();
+		future.channel().closeFuture().syncUninterruptibly();
+		eventLoop.shutdownGracefully().syncUninterruptibly();
+		bossLoop.shutdownGracefully().syncUninterruptibly();
 		if(executor != null)
-			executor.shutdownGracefully();
+			executor.shutdownGracefully().syncUninterruptibly();
+		if(concExecutor != null)
+			concExecutor.shutdownGracefully().syncUninterruptibly();
 		log.info("Stopped transport on port "+port);
 	}
 

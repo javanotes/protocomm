@@ -196,7 +196,6 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
     {
     	
     	final TunnelOutboundHandler tunnelOutHdlr = new TunnelOutboundHandler();
-    	
 		Bootstrap b = bootstrap();
 		b.handler(new ChannelInitializer<Channel>() {
 
@@ -210,7 +209,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 		ChannelFuture f = b.connect(h.getHost(), h.getPort());
 		log.info("Negotiating destination "+h);
 		
-		h.associate(f);
+		h.associate(f, tunnelOutHdlr);
 
 		if (await > 0) {
 			if (!h.awaitReady(await, unit)) {
@@ -218,7 +217,7 @@ public class TunnelInboundHandler extends ChannelDuplexHandler {
 			}
 			;
 		}
-		h.setTunnelOutHandler(tunnelOutHdlr);
+		
 	}
     private ConcurrentMap<String, UUID> sessions = new ConcurrentHashMap<>();
     private Bootstrap bootstrap()

@@ -33,7 +33,7 @@ class ConcurrentEventExecutor extends SingleThreadEventExecutor {
             RejectedExecutionHandler rejectedExecutionHandler, int execThreads) {
 		super(parent, executor, true, maxPendingTasks, rejectedExecutionHandler);
 		executors = Executors.newFixedThreadPool(execThreads, new ThreadFactory() {
-			int n = 0;
+			int n = 1;
 			@Override
 			public Thread newThread(Runnable arg0) {
 				Thread t = new Thread(arg0, "xcomm-exec-"+(n++));

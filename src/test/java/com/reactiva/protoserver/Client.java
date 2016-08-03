@@ -117,14 +117,14 @@ public class Client {
 	
 	}
 	
-	static int ITERATION = 10, PORT = 8093, CONCURRENCY = 100, CYCLE = 100, MAX_THREAD = 20;
+	static int ITERATION = 10, PORT = 8081, CONCURRENCY = 100, CYCLE = 100, MAX_THREAD = 20;
 	
 	public static void main(String[] args) throws Exception {
 		//simpleTest();
-		simpleConcurrentTest();
-		//runPerf();
+		//simpleConcurrentTest();
+		runPerf();
 		
-		//sendRequestCodec(10);
+		//sendRequestCodec(100);
 		
 	}
 	static final StreamedITOCCodec codec = new StreamedITOCCodec();
@@ -144,7 +144,7 @@ public class Client {
 				out.flush();
 				//System.out.println("Sent request..");
 				ITOCLogin resp = codec.decode(ITOCLogin.class, in);
-				System.out.println("Response => " + resp);
+				//System.out.println("Response => " + resp);
 			}
 			
 		} finally {

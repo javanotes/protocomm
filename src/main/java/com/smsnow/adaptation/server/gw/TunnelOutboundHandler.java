@@ -1,5 +1,7 @@
 package com.smsnow.adaptation.server.gw;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,13 +17,6 @@ class TunnelOutboundHandler extends ChannelInboundHandlerAdapter {
 
 	private static Logger log = LoggerFactory.getLogger(TunnelOutboundHandler.class);
 	private Channel clientChannel;
-	/**
-	 * 
-	 * @param inboundChannel
-	 */
-	public TunnelOutboundHandler(Channel inboundChannel) {
-		this.setClientChannel(inboundChannel);
-	}
 	/**
 	 * 
 	 */
@@ -44,6 +39,7 @@ class TunnelOutboundHandler extends ChannelInboundHandlerAdapter {
 	        	log.debug("REVERSE TUNNEL WRITE complete");
 	        }
 		});
+		//notifyOnOutboundRead();
     }
 
 	@Override
@@ -53,18 +49,41 @@ class TunnelOutboundHandler extends ChannelInboundHandlerAdapter {
         log.debug("#Trace#", e);
         Utils.closeOnIOErr(ctx.channel());
     }
+	private final AtomicBoolean inProc = new AtomicBoolean();
 	/**
 	 * 
 	 * @return
 	 */
-	private synchronized Channel getClientChannel() {
+	private Channel getClientChannel() {
 		return clientChannel;
+	}
+	private void notifyOnOutboundRead()
+	{
+		synchronized (inProc) {
+    		inProc.compareAndSet(true, false);
+    		inProc.notifyAll();
+		}
+	}
+	private void waitOnOutboundRead()
+	{
+		boolean intr = false;
+		synchronized (inProc) {
+			while(!inProc.compareAndSet(false, true))
+				try {
+					inProc.wait();
+				} catch (InterruptedException e) {
+					intr = true;
+				}
+		}
+		if(intr)
+			Thread.currentThread().interrupt();
 	}
 	/**
 	 * Set and request read
 	 * @param clientChannel
 	 */
-	public synchronized void setClientChannel(Channel clientChannel) {
+	public void setClientChannel(Channel clientChannel) {
+		//waitOnOutboundRead();
 		this.clientChannel = clientChannel;
 	}
 }

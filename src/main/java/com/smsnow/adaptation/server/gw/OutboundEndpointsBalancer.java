@@ -41,7 +41,7 @@ class OutboundEndpointsBalancer implements BalancingStrategy<OutboundEndpoint>
 
 				@Override
 				public OutboundEndpoint get() {
-					return oe;
+					return new OutboundEndpoint(oe.getHost(), oe.getPort());
 				}
 			}));
 		}
