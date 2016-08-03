@@ -1,4 +1,4 @@
-package com.smsnow.adaptation.codegen;
+package com.smsnow.adaptation.protocol.gen;
 
 import org.springframework.util.StringUtils;
 

@@ -1,4 +1,4 @@
-package com.smsnow.adaptation.codegen;
+package com.smsnow.adaptation.protocol.gen;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -7,10 +7,10 @@ import java.util.Scanner;
 
 import org.springframework.util.StringUtils;
 
-import com.smsnow.adaptation.dto.common.ApplicationHeader;
-import com.smsnow.adaptation.dto.common.ITOCInboundHeader;
-import com.smsnow.adaptation.dto.common.ITOCOutboundHeader;
-import com.smsnow.adaptation.dto.common.ITOCTrailer;
+import com.smsnow.adaptation.dto.ApplicationHeader;
+import com.smsnow.adaptation.dto.ITOCInboundHeader;
+import com.smsnow.adaptation.dto.ITOCOutboundHeader;
+import com.smsnow.adaptation.dto.ITOCTrailer;
 import com.smsnow.adaptation.protocol.Attribute;
 
 public class FormatParser {
@@ -76,10 +76,10 @@ public class FormatParser {
 				return numeric(f);
 				
 			}
-			else if(Attribute.BINARY.name().equals(attr))
+			/*else if(Attribute.BINARY.name().equals(attr))
 			{
 				return numeric(f);
-			}
+			}*/
 			else if(Attribute.APPHEADER.name().equals(attr))
 			{
 				return new JField(f.getContent(), ApplicationHeader.class);

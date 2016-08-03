@@ -18,6 +18,10 @@ public class ProtocolMeta {
 		getFormats().put(fm.offset, fm);
 	}
 	
+	@Override
+	public String toString() {
+		return name+" [formats=" + formats + "]";
+	}
 	private void setSize(int size) {
 	}
 	private volatile boolean validated = false;

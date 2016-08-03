@@ -1,4 +1,4 @@
-package com.smsnow.adaptation.codegen;
+package com.smsnow.adaptation.protocol.gen;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,17 +16,24 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.jboss.forge.roaster.Roaster;
+import org.jboss.forge.roaster.model.source.FieldSource;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import com.smsnow.adaptation.dto.ITOCRequest;
+import com.smsnow.adaptation.dto.ITOCResponse;
 import com.smsnow.adaptation.protocol.Attribute;
 import com.smsnow.adaptation.protocol.Format;
 import com.smsnow.adaptation.protocol.Protocol;
-
-public class Generator {
+/**
+ * Reverse engineering utility for ITOC message types.
+ * @author esutdal
+ *
+ */
+public class CodeGen {
 	
-	private static String generateSourceCode(JMeta meta)
+	private static String generateSourceCode(JMeta meta, String inherit)
 	{
 		Assert.notNull(meta.className, "Class name not specified");
 		final JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
@@ -36,7 +43,14 @@ public class Generator {
 			javaClass.setPackage(meta.packageName);
 
 		javaClass.addAnnotation(Protocol.class).setStringValue("name", meta.getName()+"");
-				
+		if("REQ".equals(inherit))
+		{
+			javaClass.extendSuperType(ITOCRequest.class);
+		}
+		else if("RES".equals(inherit))
+		{
+			javaClass.extendSuperType(ITOCResponse.class);
+		}
 		javaClass.addInterface(Serializable.class);
 		javaClass.addField()
 		  .setName("serialVersionUID")
@@ -57,10 +71,24 @@ public class Generator {
 				attrib = Attribute.UNDEF;
 			}
 			
-			javaClass.addProperty(fld.type, fld.name)
+			FieldSource<JavaClassSource> fldSrc = javaClass.addProperty(fld.type, fld.name)
 			.getField()
-			.setPrivate()
-			.addAnnotation(Format.class)
+			.setPrivate();
+			if(fld.type == byte[].class)
+			{
+				fldSrc.setLiteralInitializer("new byte["+fmt.length+"]");
+			}
+			else if(fld.type == String.class)
+			{
+				fldSrc.setStringInitializer("");
+			}
+			else if(!fld.type.isPrimitive())
+			{
+				fldSrc.setLiteralInitializer("null");
+			}
+			
+			
+			fldSrc.addAnnotation(Format.class)
 			.setEnumValue("attribute", attrib)
 			.setLiteralValue("offset", fmt.offset+"")
 			.setLiteralValue("length", fmt.length+"")
@@ -79,10 +107,11 @@ public class Generator {
 	 * Generate a java source file at the specified directory.
 	 * @param meta
 	 * @param dir
+	 * @param inherit 
 	 * @return the absolute path name for the generated file.
 	 * @throws IOException
 	 */
-	public static String run(JMeta meta, String dir, String templFile) throws IOException
+	public static String run(JMeta meta, String dir, String templFile, String inherit) throws IOException
 	{
 		File f = new File(dir);
 		if(!f.exists())
@@ -90,7 +119,7 @@ public class Generator {
 		if(!f.isDirectory())
 			throw new IOException("Not a valid directory - "+dir);
 		
-		String java = generateSourceCode(meta);
+		String java = generateSourceCode(meta, inherit);
 		Path p = f.toPath();
 		p = p.resolve(meta.className+".java");
 		
@@ -118,9 +147,10 @@ public class Generator {
 	{
 		String s = new StringBuilder("Usage: ")
 		.append("java ")
-		.append(Generator.class.getName())
+		.append(CodeGen.class.getName())
 		.append("\n -t <template_file_path> *\n")
 		.append(" -c <generated_class_name> *\n")
+		.append(" -i <req/res> \n")
 		.append(" -d <target_dir_path> \n")
 		.append(" -p <generated_package_name>\n")
 		.append(" -a <protocol_annot_name>\n")
@@ -135,7 +165,7 @@ public class Generator {
 	public static void run(List<String> args)
 	{
 		int i;
-		String template = "", className = "", pkgName="", destn = "", name = "";
+		String template = "", className = "", pkgName="", destn = "", name = "", inherit = "";
 		short typeCode = 0;
 		if((i = args.indexOf("-t")) != -1)
 		{
@@ -159,6 +189,10 @@ public class Generator {
 		if((i = args.indexOf("-p")) != -1)
 		{
 			pkgName = args.get(i+1);
+		}
+		if((i = args.indexOf("-i")) != -1)
+		{
+			inherit = args.get(i+1).toUpperCase();
 		}
 		if((i = args.indexOf("-a")) != -1)
 		{
@@ -188,7 +222,7 @@ public class Generator {
 				meta.setPackageName(pkgName);
 				meta.setName(name);
 				meta.setTypeCode(typeCode);
-				String fileGen = run(meta, destn, template);
+				String fileGen = run(meta, destn, template, inherit);
 				System.out.println("File generated: "+fileGen);
 			}
 			else

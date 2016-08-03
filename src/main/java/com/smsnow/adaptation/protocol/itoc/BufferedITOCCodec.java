@@ -10,8 +10,8 @@ import java.util.Map.Entry;
 
 import org.springframework.util.Assert;
 
-import com.smsnow.adaptation.protocol.AbstractFixedLenCodec;
-import com.smsnow.adaptation.protocol.BufferedFixedLenCodec;
+import com.smsnow.adaptation.protocol.AbstractLengthBasedCodec;
+import com.smsnow.adaptation.protocol.BufferedLengthBasedCodec;
 import com.smsnow.adaptation.protocol.CodecException;
 import com.smsnow.adaptation.protocol.CodecException.Type;
 import com.smsnow.adaptation.protocol.FormatMeta;
@@ -22,7 +22,7 @@ import com.smsnow.adaptation.protocol.ProtocolMeta;
  * @author esutdal
  *
  */
-public class BufferedITOCCodec extends AbstractFixedLenCodec implements BufferedFixedLenCodec {
+public class BufferedITOCCodec extends AbstractLengthBasedCodec implements BufferedLengthBasedCodec {
 	final Charset charset;
 	public BufferedITOCCodec(Charset charset) {
 		System.err.println("* WARNING: BufferedITOCCodec not compliant *");
@@ -58,7 +58,7 @@ public class BufferedITOCCodec extends AbstractFixedLenCodec implements Buffered
 	@Override
 	protected void writeBytes(FormatMeta f, Object o, ByteBuffer out) throws IOException
 	{
-		f.checkBounds(o);
+		f.checkBounds(o, charset);
 		byte[] bytes;
 		switch(f.getAttr())
 		{

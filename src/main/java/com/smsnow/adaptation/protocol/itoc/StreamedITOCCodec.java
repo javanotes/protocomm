@@ -12,23 +12,23 @@ import java.util.Map.Entry;
 
 import org.springframework.util.Assert;
 
-import com.smsnow.adaptation.dto.common.ApplicationHeader;
-import com.smsnow.adaptation.dto.common.ITOCInboundHeader;
-import com.smsnow.adaptation.dto.common.ITOCOutboundHeader;
-import com.smsnow.adaptation.dto.common.ITOCTrailer;
-import com.smsnow.adaptation.protocol.AbstractFixedLenCodec;
+import com.smsnow.adaptation.dto.ApplicationHeader;
+import com.smsnow.adaptation.dto.ITOCInboundHeader;
+import com.smsnow.adaptation.dto.ITOCOutboundHeader;
+import com.smsnow.adaptation.dto.ITOCTrailer;
+import com.smsnow.adaptation.protocol.AbstractLengthBasedCodec;
 import com.smsnow.adaptation.protocol.CodecException;
 import com.smsnow.adaptation.protocol.CodecException.Type;
 import com.smsnow.adaptation.protocol.FormatMeta;
 import com.smsnow.adaptation.protocol.ProtocolMeta;
-import com.smsnow.adaptation.protocol.StreamedFixedLenCodec;
+import com.smsnow.adaptation.protocol.StreamedLengthBasedCodec;
 /**
  * Encode/Decode a pojo bean class according to ITOC protocol specs.
  * @refer 800-17.0-SPECS-1 FINAL, August, 2008
  * @author esutdal
  *
  */
-public class StreamedITOCCodec extends AbstractFixedLenCodec implements StreamedFixedLenCodec {
+public class StreamedITOCCodec extends AbstractLengthBasedCodec implements StreamedLengthBasedCodec {
 	final Charset charset;
 	public StreamedITOCCodec(Charset charset) {
 		this.charset = charset;
@@ -84,32 +84,32 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 			fillBytes(f, out);
 			return;
 		}
-		f.checkBounds(o);
+		Object o1 = f.checkBounds(o, charset);
 		byte[] bytes;
 			
 		switch(f.getAttr())
 		{
 		case APPHEADER:
-			writeAsObject(f, o, out);
+			writeAsObject(f, o1, out);
 			break;
 		case BINARY:
-			writeAsNumeric(f, o, out);
+			out.write((byte[]) o1, 0, f.getLength());
 			break;
 		case INHEADER:
-			writeAsObject(f, o, out);
+			writeAsObject(f, o1, out);
 			break;
 		case NUMERIC:
-			writeAsNumeric(f, o, out);
+			writeAsNumeric(f, o1, out);
 			break;
 		case OUTHEADER:
-			writeAsObject(f, o, out);
+			writeAsObject(f, o1, out);
 			break;
 		case TEXT:
-			bytes = o.toString().getBytes(charset);
+			bytes = o1.toString().getBytes(charset);
 			out.write(bytes, 0, f.getLength());
 			break;
 		case TRAILER:
-			writeAsObject(f, o, out);
+			writeAsObject(f, o1, out);
 			break;
 		default:
 			fillBytes(f, out);
@@ -148,9 +148,6 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 		case APPHEADER:
 			bytes = readFully(in, f.getLength());
 			ret = decode(ApplicationHeader.class, new DataInputStream(new ByteArrayInputStream(bytes)));
-			break;
-		case BINARY:
-			ret = readAsNumeric(f, in);
 			break;
 		case INHEADER:
 			bytes = readFully(in, f.getLength());
@@ -287,9 +284,9 @@ public class StreamedITOCCodec extends AbstractFixedLenCodec implements Streamed
 			try {
 				write(f, protoClass, out);
 			} catch (ReflectiveOperationException e1) {
-				throw new CodecException(off, e1, Type.BEAN_ERR);
+				throw new CodecException(metaData.getName(), off, e1, Type.BEAN_ERR);
 			} catch (IOException e1) {
-				throw new CodecException(off, e1, Type.IO_ERR);
+				throw new CodecException(metaData.getName(), off, e1, Type.IO_ERR);
 			}
 		}
 		

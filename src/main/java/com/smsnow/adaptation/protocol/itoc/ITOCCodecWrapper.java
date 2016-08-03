@@ -1,5 +1,7 @@
 package com.smsnow.adaptation.protocol.itoc;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.nio.ByteBuffer;
@@ -7,18 +9,31 @@ import java.nio.charset.Charset;
 
 import org.springframework.util.Assert;
 
-import com.smsnow.adaptation.protocol.BufferedFixedLenCodec;
+import com.smsnow.adaptation.protocol.BufferedLengthBasedCodec;
 import com.smsnow.adaptation.protocol.CodecException;
 import com.smsnow.adaptation.protocol.LengthBasedCodec;
 import com.smsnow.adaptation.protocol.ProtocolMeta;
-import com.smsnow.adaptation.protocol.StreamedFixedLenCodec;
+import com.smsnow.adaptation.protocol.StreamedLengthBasedCodec;
 /**
  * A wrapper class to make use either of streamed or buffered transport, in a configurable manner.
+ * <b>NOTE</b>: buffered transport is experimental however, and hence not recommended.
  * @author esutdal
  *
  */
-public class ITOCCodecWrapper implements LengthBasedCodec,StreamedFixedLenCodec,BufferedFixedLenCodec {
+public class ITOCCodecWrapper implements LengthBasedCodec,StreamedLengthBasedCodec,BufferedLengthBasedCodec {
 
+	/**
+	 * Validate the meta data of a protocol class instance. Would throw exception if not valid.
+	 * @param protoInstance
+	 * @throws CodecException
+	 */
+	public void validateMeta(Object protoInstance) throws CodecException
+	{
+		Assert.notNull(str, "Not using streamed codec");
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		encode(protoInstance, new DataOutputStream(out));
+		protoInstance = decode(protoInstance.getClass(), new DataInputStream(new ByteArrayInputStream(out.toByteArray())));
+	}
 	private StreamedITOCCodec str = null;
 	private BufferedITOCCodec buff = null;
 	private LengthBasedCodec fl;

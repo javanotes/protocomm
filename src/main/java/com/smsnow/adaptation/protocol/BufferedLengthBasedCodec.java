@@ -2,7 +2,7 @@ package com.smsnow.adaptation.protocol;
 
 import java.nio.ByteBuffer;
 
-public interface BufferedFixedLenCodec extends LengthBasedCodec{
+public interface BufferedLengthBasedCodec extends LengthBasedCodec{
 
 	/**
 	 * Convert a protocol instance to byte buffer.

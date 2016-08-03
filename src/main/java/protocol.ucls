@@ -11,8 +11,8 @@
       <operations public="false" package="false" protected="false" private="false" static="true"/>    
     </display>  
   </interface>  
-  <class id="2" language="java" name="com.smsnow.adaptation.protocol.AbstractFixedLenCodec" project="protocomm" 
-    file="/protocomm/src/main/java/com/smsnow/adaptation/protocol/AbstractFixedLenCodec.java" binary="false" 
+  <class id="2" language="java" name="com.smsnow.adaptation.protocol.AbstractLengthBasedCodec" project="protocomm" 
+    file="/protocomm/src/main/java/com/smsnow/adaptation/protocol/AbstractLengthBasedCodec.java" binary="false" 
     corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="348" y="248"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 

@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 
 import org.springframework.util.Assert;
 
-import com.smsnow.adaptation.protocol.BufferedFixedLenCodec;
+import com.smsnow.adaptation.protocol.BufferedLengthBasedCodec;
 import com.smsnow.adaptation.protocol.CodecException;
 import com.smsnow.adaptation.protocol.itoc.ITOCCodecWrapper;
 import com.smsnow.adaptation.server.RequestHandler;

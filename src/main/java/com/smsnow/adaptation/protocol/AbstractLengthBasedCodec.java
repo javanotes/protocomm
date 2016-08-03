@@ -31,7 +31,7 @@ import com.smsnow.adaptation.protocol.CodecException.Type;
  * @author esutdal
  *
  */
-public abstract class AbstractFixedLenCodec implements LengthBasedCodec {
+public abstract class AbstractLengthBasedCodec implements LengthBasedCodec {
 	/**
 	 * 
 	 * @param basePkg

@@ -3,7 +3,7 @@ package com.smsnow.adaptation.protocol;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
-public interface StreamedFixedLenCodec extends LengthBasedCodec {
+public interface StreamedLengthBasedCodec extends LengthBasedCodec {
 
 	/**
 	 * Write a protocol instance to out stream.
