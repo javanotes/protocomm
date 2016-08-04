@@ -6,9 +6,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import com.smsnow.adaptation.protocol.BufferedLengthBasedCodec;
 import com.smsnow.adaptation.protocol.CodecException;
 import com.smsnow.adaptation.protocol.itoc.ITOCCodecWrapper;
 import com.smsnow.adaptation.server.RequestHandler;
@@ -20,6 +21,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 @Sharable
 public class ResponseConvertorHandler extends MessageToByteEncoder<Serializable> {
 
+	private static final Logger log = LoggerFactory.getLogger(ResponseConvertorHandler.class);
 	private ITOCCodecWrapper codec;
 	private RequestHandler rh;
 	private boolean buffCodec;
@@ -41,9 +43,8 @@ public class ResponseConvertorHandler extends MessageToByteEncoder<Serializable>
 	 * @throws IOException 
 	 * @throws CodecException 
 	 */
-	protected void write(Serializable resp, DataOutputStream out) throws IOException, CodecException
+	protected void write(Serializable resp, DataOutputStream out) throws CodecException
 	{
-		Assert.isAssignable(resp.getClass(), rh.responseMapping());
 		codec.encode(resp, out);
 	}
 	protected ByteBuffer write(Serializable resp) throws IOException, CodecException
@@ -59,8 +60,14 @@ public class ResponseConvertorHandler extends MessageToByteEncoder<Serializable>
 		else
 		{
 			ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-			write(msg, new DataOutputStream(bytes));
+			log.debug("Writing response of type "+msg.getClass());
+			try {
+				write(msg, new DataOutputStream(bytes));
+			} catch (CodecException e) {
+				log.error("--Response conversion error--", e);
+			}
 			out.writeBytes(bytes.toByteArray());
+			
 		}
 	}
 

@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.log4j.spi.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.util.Assert;
 
@@ -57,6 +56,11 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 				out.writeShort((short) o);
 				count.addAndGet(f.getLength());
 				break;
+			case 3:
+				byte[] b3i = CommonUtil.intTo3Bytes((int) o);
+				out.write(b3i);
+				count.addAndGet(f.getLength());
+				break;
 			case 4:
 				out.writeInt((int) o);
 				count.addAndGet(f.getLength());
@@ -87,8 +91,7 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 			fillBytes(f, out, count);
 		}
 	}
-	//@Override
-	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out, AtomicInteger count) throws IOException, CodecException
+	protected void writeBytesAndCount(FormatMeta f, Object o, DataOutputStream out, AtomicInteger count) throws IOException, CodecException
 	{
 		
 		if(o == null)
@@ -141,6 +144,9 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 				return in.readByte();
 			case 2:
 				return in.readShort();
+			case 3:
+				byte[] b3i = readFully(in, 3);
+				return CommonUtil.intFrom3Bytes(b3i);
 			case 4:
 				return in.readInt();
 			case 8:
@@ -251,7 +257,7 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 		}
 		
 		try {
-			writeBytes(f, o, out, count);
+			writeBytesAndCount(f, o, out, count);
 		} catch (IllegalArgumentException e) {
 			throw new ReflectiveOperationException(e);
 		}
@@ -286,7 +292,7 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 			req.getMVSOutboundITOCHeader().setTotalMessageLenLLLL(CommonUtil.intToBytes(meta.getSize()));
 		}
 		AtomicInteger c = new AtomicInteger();
-		encode(protoClass, meta, out, c);
+		encode(protoClass, meta, out);
 		log.debug(protoClass.getClass()+" Bytes written:: "+c.get());
 		
 	}
@@ -303,13 +309,14 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 	}
 	
 	@Override
-	public <T> void encode(T protoClass, ProtocolMeta metaData, DataOutputStream out, AtomicInteger count) throws CodecException {
+	public <T> void encode(T protoClass, ProtocolMeta metaData, DataOutputStream out) throws CodecException {
 		try {
 			Assert.notNull(metaData);
 			validate(metaData, protoClass.getClass());
 		} catch (Exception e2) {
 			throw new CodecException(e2, Type.META_ERR);
 		}
+		AtomicInteger count = new AtomicInteger();
 		for(Entry<Integer, FormatMeta> e : metaData.getFormats().entrySet())
 		{
 			int off = e.getKey();
@@ -352,11 +359,6 @@ public class StreamedITOCCodec extends AbstractLengthBasedCodec implements Strea
 			ce.setMetaName(metaData.getName());
 			throw ce;
 		}
-	}
-	@Override
-	public <T> void encode(T protoClass, ProtocolMeta metaData, DataOutputStream out) throws CodecException {
-		// TODO Auto-generated method stub
-		
 	}
 	
 	

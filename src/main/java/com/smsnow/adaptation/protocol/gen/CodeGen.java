@@ -46,11 +46,27 @@ public class CodeGen {
 		if("REQ".equals(inherit))
 		{
 			javaClass.extendSuperType(ITOCRequest.class);
+			javaClass.addMethod()
+			  .setConstructor(true)
+			  .setPublic()
+			  .setBody("super();");
 		}
 		else if("RES".equals(inherit))
 		{
 			javaClass.extendSuperType(ITOCResponse.class);
+			javaClass.addMethod()
+			  .setConstructor(true)
+			  .setPublic()
+			  .setBody("super();");
 		}
+		else
+		{
+			javaClass.addMethod()
+			  .setConstructor(true)
+			  .setPublic()
+			  .setBody("");
+		}
+		
 		javaClass.addInterface(Serializable.class);
 		javaClass.addField()
 		  .setName("serialVersionUID")
@@ -96,11 +112,6 @@ public class CodeGen {
 		}
 		
 
-		javaClass.addMethod()
-		  .setConstructor(true)
-		  .setPublic()
-		  .setBody("");
-		
 		return javaClass.toString();
 	}
 	/**

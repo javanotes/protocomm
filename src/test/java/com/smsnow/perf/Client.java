@@ -128,7 +128,7 @@ public class Client {
 		simpleConcurrentTest();
 		//runPerf();
 		
-		//sendRequestCodec(100);
+		//sendRequestCodec(10);
 		
 	}
 	static final StreamedITOCCodec codec = new StreamedITOCCodec();
@@ -144,13 +144,13 @@ public class Client {
 				
 			login.setMVSInboundITOCHeader(new ITOCInboundHeader());
 			login.setApplicationHeader(new ApplicationHeader());
-			login.setITOCTrailer(new ITOCTrailer());
+			//login.setITOCTrailer(new ITOCTrailer());
 			for (int i = 0; i < n; i++) {
 				codec.encode(login, out);
 				out.flush();
 				//System.out.println("Sent request..");
 				ITOCLogin resp = codec.decode(ITOCLogin.class, in);
-				//System.out.println("Response => " + resp);
+				System.out.println("Response => " + resp);
 			}
 			
 		} finally {

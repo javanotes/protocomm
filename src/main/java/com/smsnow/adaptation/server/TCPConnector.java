@@ -18,6 +18,7 @@ import com.smsnow.adaptation.server.gw.OutboundEndpoint;
 import com.smsnow.adaptation.server.gw.TunnelInboundHandler;
 import com.smsnow.adaptation.server.pipe.RequestConvertorHandler;
 import com.smsnow.adaptation.server.pipe.RequestProcessorHandler;
+import com.smsnow.adaptation.server.pipe.RequestProcessorHandlerAsync;
 import com.smsnow.adaptation.server.pipe.ResponseConvertorHandler;
 import com.smsnow.adaptation.server.pipe.TerminalHandler;
 
@@ -41,7 +42,7 @@ import io.netty.util.concurrent.RejectedExecutionHandler;
  *
  */
 class TCPConnector implements Runnable{
-	private EventExecutorGroup executor, concExecutor;
+	private EventExecutorGroup eventExecutors, procExecutors;
 	private ITOCCodecWrapper codecHandler;
 	public LengthBasedCodec getCodecHandler() {
 		return codecHandler;
@@ -73,22 +74,16 @@ class TCPConnector implements Runnable{
 		 * assuming the actual message size would be much lesser than that.
 		 * TODO: make LengthFieldBasedFrameDecoder configurable?
 		 */
-		ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes, Math.negateExact(config.protoLenBytes), 0){
-			protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception
-			{
-				log.debug("Start decoding");
-				Object o = super.decode(ctx, in);
-				log.debug("End decoding");
-				return o;
-			}
-		});
+		ch.pipeline().addLast(eventExecutors, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, 
+				config.protoLenBytes, Math.negateExact(config.protoLenBytes), 0));
 		
 		//ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes));
 		
-		ch.pipeline().addLast(executor, new RequestConvertorHandler(codecHandler, requestHandler, config.useByteBuf));
-		ch.pipeline().addLast(concExecutor, processor);
-		ch.pipeline().addLast(executor, encoder);
-		ch.pipeline().addLast(executor, terminal);
+		ch.pipeline().addLast(eventExecutors, new RequestConvertorHandler(codecHandler, requestHandler, config.useByteBuf));
+		//ch.pipeline().addLast(concExecutor, processor);
+		ch.pipeline().addLast(procExecutors, processorAsync);
+		ch.pipeline().addLast(eventExecutors, encoder);
+		ch.pipeline().addLast(eventExecutors, terminal);
 		
 	}
 	/**
@@ -102,12 +97,12 @@ class TCPConnector implements Runnable{
 			synchronized (TCPConnector.class) {
 				if (tunnelHandler == null) {
 					tunnelHandler = new TunnelInboundHandler(loadTargets(), eventLoop);
-					tunnelHandler.setOutboundExecutor(executor);
+					tunnelHandler.setOutboundExecutor(eventExecutors);
 					tunnelHandler.setConfig(config);
 				}
 			}
 		}
-		ch.pipeline().addLast(executor, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes), tunnelHandler);
+		ch.pipeline().addLast(eventExecutors, new LengthFieldBasedFrameDecoder(config.protoLenMax, config.protoLenOffset, config.protoLenBytes), tunnelHandler);
 	}
 	
 	/**
@@ -243,7 +238,7 @@ class TCPConnector implements Runnable{
 	 */
 	private void initExecThreads()
 	{
-		executor = new DefaultEventExecutorGroup(config.eventThreadCount, new ThreadFactory() {
+		eventExecutors = new DefaultEventExecutorGroup(config.eventThreadCount, new ThreadFactory() {
 			int n = 1;
 			@Override
 			public Thread newThread(Runnable arg0) {
@@ -252,7 +247,7 @@ class TCPConnector implements Runnable{
 			}
 		});
 		
-		concExecutor = new DefaultEventExecutorGroup(1, new ThreadFactory() {
+		procExecutors = new DefaultEventExecutorGroup(1, new ThreadFactory() {
 			@Override
 			public Thread newThread(Runnable arg0) {
 				Thread t = new Thread(arg0, "xcomm-execgrp");
@@ -315,10 +310,10 @@ class TCPConnector implements Runnable{
 		future.channel().closeFuture().syncUninterruptibly();
 		eventLoop.shutdownGracefully().syncUninterruptibly();
 		bossLoop.shutdownGracefully().syncUninterruptibly();
-		if(executor != null)
-			executor.shutdownGracefully().syncUninterruptibly();
-		if(concExecutor != null)
-			concExecutor.shutdownGracefully().syncUninterruptibly();
+		if(eventExecutors != null)
+			eventExecutors.shutdownGracefully().syncUninterruptibly();
+		if(procExecutors != null)
+			procExecutors.shutdownGracefully().syncUninterruptibly();
 		log.info("Stopped transport on port "+port);
 	}
 
@@ -335,6 +330,7 @@ class TCPConnector implements Runnable{
 	}
 	@Autowired
 	private HostAndPort targets;
+	RequestProcessorHandlerAsync processorAsync;
 	
 	public Config getConfig() {
 		return config;

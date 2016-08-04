@@ -84,6 +84,8 @@ public class FormatMeta {
 				return n.byteValue();
 			case 2:
 				return n.shortValue();
+			case 3:
+				return n.intValue();
 			case 4:
 				return n.intValue();
 			case 8:

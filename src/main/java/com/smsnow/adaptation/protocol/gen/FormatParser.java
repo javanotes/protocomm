@@ -54,12 +54,14 @@ public class FormatParser {
 			return new JField(f.getContent(), Byte.TYPE);
 		case 2:
 			return new JField(f.getContent(), Short.TYPE);
+		case 3:
+			return new JField(f.getContent(), Integer.TYPE);
 		case 4:
 			return new JField(f.getContent(), Integer.TYPE);
 		case 8:
 			return new JField(f.getContent(), Long.TYPE);
 		default:
-			throw new IllegalArgumentException("Invalid numeric length " + f.length);
+			throw new IllegalArgumentException(f.content+" Invalid numeric length " + f.length);
 		}
 	}
 	private static JField validate(JFormat f)

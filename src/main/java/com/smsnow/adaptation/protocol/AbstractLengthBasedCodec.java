@@ -189,14 +189,14 @@ public abstract class AbstractLengthBasedCodec implements LengthBasedCodec {
 	}
 	/**
 	 * This is the class which does the write action. Change logic here to accommodate
-	 * different protocol.
+	 * different protocol. with a counter.
 	 * @param f
 	 * @param o
 	 * @param out
 	 * @throws IOException
 	 * @throws CodecException 
 	 */
-	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out, AtomicInteger count) throws IOException, CodecException
+	protected void writeBytes(FormatMeta f, Object o, DataOutputStream out) throws IOException, CodecException
 	{
 		throw new IOException(new UnsupportedOperationException("Implementation to be provided by subclass"));
 	}
@@ -216,10 +216,12 @@ public abstract class AbstractLengthBasedCodec implements LengthBasedCodec {
 	/**
 	 * This is the class which does the write action. Change logic here to accommodate
 	 * different protocol.
+	 * @deprecated
 	 * @param f
 	 * @param o
 	 * @param out
 	 * @throws IOException
+	 * 
 	 */
 	protected void writeBytes(FormatMeta f, Object o, ByteBuffer out) throws IOException {
 		throw new IOException(new UnsupportedOperationException("Implementation to be provided by subclass"));
@@ -227,6 +229,7 @@ public abstract class AbstractLengthBasedCodec implements LengthBasedCodec {
 	/**
 	 * This is the class which does the read action. Change logic here to accommodate different
 	 * protocol.
+	 * @deprecated
 	 * @param f
 	 * @param in
 	 * @return
@@ -235,9 +238,5 @@ public abstract class AbstractLengthBasedCodec implements LengthBasedCodec {
 	protected Object readBytes(FormatMeta f, ByteBuffer in) throws IOException {
 		throw new IOException(new UnsupportedOperationException("Implementation to be provided by subclass"));
 	}
-	public <T> void encode(T protoClass, ProtocolMeta metaData, DataOutputStream out, AtomicInteger count)
-			throws CodecException {
-		// TODO Auto-generated method stub
-		
-	}
+	
 }

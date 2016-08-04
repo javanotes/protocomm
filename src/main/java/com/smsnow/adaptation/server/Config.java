@@ -18,6 +18,7 @@ import org.springframework.context.annotation.DependsOn;
 
 import com.smsnow.adaptation.protocol.itoc.ITOCCodecWrapper;
 import com.smsnow.adaptation.server.pipe.RequestProcessorHandler;
+import com.smsnow.adaptation.server.pipe.RequestProcessorHandlerAsync;
 import com.smsnow.adaptation.server.pipe.ResponseConvertorHandler;
 import com.smsnow.adaptation.server.pipe.TerminalHandler;
 
@@ -129,7 +130,7 @@ public class Config {
 		handler().destroy();
 	}
 	@Bean
-	@DependsOn({"encoder", "processor", "targets"})
+	@DependsOn({"encoder", "processor", "processorAsync", "targets"})
 	public TCPConnector server() throws Exception
 	{
 		TCPConnector s = new TCPConnector(port, ioThreadCount, execThreadCount, proxyMode);
@@ -138,6 +139,7 @@ public class Config {
 		if (!proxyMode) {
 			s.setRequestHandler(handler());
 			s.setCodecHandler(codec());
+			s.processorAsync = processorAsync();
 			s.encoder = encoder();
 			s.processor = processor();
 			s.terminal = terminal();
@@ -159,6 +161,11 @@ public class Config {
 	RequestProcessorHandler processor() throws Exception
 	{
 		return new RequestProcessorHandler(handler());
+	}
+	@Bean
+	RequestProcessorHandlerAsync processorAsync() throws Exception
+	{
+		return new RequestProcessorHandlerAsync();
 	}
 	@Bean
 	@DependsOn("codec")

@@ -25,8 +25,8 @@ public class ITOCLogin extends ITOCRequest implements Serializable {
 	private String oldPassword = "";
 	@Format(attribute = Attribute.TEXT, offset = 436, length = 1, constant = "")
 	private String action = "";
-	@Format(attribute = Attribute.TRAILER, offset = 437, length = 4, constant = "")
-	private ITOCTrailer iTOCTrailer = null;
+	/*@Format(attribute = Attribute.TRAILER, offset = 437, length = 4, constant = "")
+	private ITOCTrailer iTOCTrailer = null;*/
 	@Format(attribute = Attribute.TEXT, offset = 412, length = 8, constant = "")
 	private String userLogonID = "";
 
@@ -54,13 +54,13 @@ public class ITOCLogin extends ITOCRequest implements Serializable {
 		this.action = action;
 	}
 
-	public ITOCTrailer getITOCTrailer() {
+	/*public ITOCTrailer getITOCTrailer() {
 		return iTOCTrailer;
 	}
 
 	public void setITOCTrailer(ITOCTrailer iTOCTrailer) {
 		this.iTOCTrailer = iTOCTrailer;
-	}
+	}*/
 
 	public String getUserLogonID() {
 		return userLogonID;
